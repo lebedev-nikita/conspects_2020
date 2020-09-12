@@ -1,7 +1,6 @@
 #lang scheme/base
-; b
 (define (fact3 n)
-  (if (<= n 0)
+  (if (or (<= n 0) (not (integer? n)))
     '()
     (fact2 (- (* n 2) 1) '())
   )
@@ -21,5 +20,29 @@
   (if (= n 0)
     mul
     (fact (- n 1) (* mul n))
+  )
+)
+
+; (define (lin n)
+;   (if (or (<= n 0) (not (integer? n)))
+;     '()
+;     (fact2 (- (* n 2) 1) '())
+;   )
+; )
+
+; b
+(define (lin n)
+  (define (fact-lst nThis nMax mul)
+    (if (= nThis nMax)
+        (cons (* mul nThis) '())
+        (if (= 0 (modulo nThis 2))
+          (fact-lst (+ 1 nThis) nMax (* mul nThis))
+          (cons (* mul nThis) (fact-lst (+ 1 nThis) nMax (* mul nThis)))
+        )
+    )
+  )
+  (if (or (<= n 0) (not (integer? n)))
+    '()
+    (fact-lst 1 (- (* 2 n) 1) 1)
   )
 )
