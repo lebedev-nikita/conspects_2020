@@ -1,16 +1,34 @@
-; заготовка "Доктора". Август 2019
 #lang scheme/base
-; В учебных целях используется базовая версия Scheme
 
+(define (test) (visit-doctor 'stop 3))
 ; основная функция, запускающая "Доктора"
-; параметр name -- имя пациента
-(define (visit-doctor name)
-  (printf "Hello, ~a!\n" name)
-  (print '(what seems to be the trouble?))
-                           ; task 4
-  (doctor-driver-loop name '())
+; параметр num - сколько еще пациентов доктор может принять
+; task 5
+(define (visit-doctor stop-word num)
+  (if (< 0 num)
+    (let ((name (ask-patient-name)))
+      (if (equal? name stop-word)
+        '(working day finished)
+        (begin
+          (printf "Hello, ~a!\n" name)
+          (print '(what seems to be the trouble?))
+          (doctor-driver-loop name '())
+          (visit-doctor stop-word (- num 1))
+        )
+      )
+    )
+    '(time to go home)
+  )
 )
 
+(define (ask-patient-name)
+  (begin
+    (println '(next!))
+    (println '(who are you?))
+    (print '**)
+    (car (read))
+  ) 
+)
 ; цикл диалога Доктора с пациентом
 ; параметр name -- имя пациента
                                  ; task 4
@@ -21,7 +39,8 @@
       (cond 
 	    ((equal? user-response '(goodbye)) ; реплика '(goodbye) служит для выхода из цикла
              (printf "Goodbye, ~a!\n" name)
-             (print '(see you next week)))
+             (print '(see you next week))
+             (newline))
             (else (print (reply user-response old-phrases)) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
                   (doctor-driver-loop name (cons user-response old-phrases))
             )
