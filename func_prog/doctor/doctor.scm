@@ -32,16 +32,12 @@
 ; генерация ответной реплики по user-response -- реплике от пользователя 
 (define (reply user-response old-phrases)
   ; task 4
-  (if (null? old-phrases)
-      (case (random 2) ; с равной вероятностью выбирается один из двух способов построения ответа
-          ((0) (qualifier-answer user-response)) ; 1й способ
-          ((1) (hedge))  ; 2й способ
-      )
-      (case (random 3) ; с равной вероятностью выбирается один из двух способов построения ответа
-          ((0) (qualifier-answer user-response)) ; 1й способ
-          ((1) (hedge))  ; 2й способ
-          ((2) (history-answer old-phrases))
-      )
+  (let ((num-variants (if (null? old-phrases) 2 3))) ; history-answer недоступен при обработке первой фразы 
+    (case (random num-variants)
+        ((0) (qualifier-answer user-response)) ; 1й способ
+        ((1) (hedge))  ; 2й способ
+        ((2) (history-answer old-phrases)) ; 3й способ
+    )
   )
 )
 			
@@ -63,7 +59,7 @@
 
 ; task 4
 (define (history-answer old-phrases) 
-  (append '(earlier you said that) (pick-random old-phrases))
+  (append '(earlier you said that) (change-person (pick-random old-phrases)))
 )
 
 ; случайный выбор одного из элементов списка lst
@@ -85,11 +81,9 @@
                         (yours mine)
                         (yourself myself))
                       phrase)
- )
+)
   
-(define (test) (qualifier-answer '(i feel bored)))
-
-; task 3
+; ; task 3
 (define (many-replace replacement-pairs lst)
   (map 
     (lambda (word)
@@ -101,7 +95,7 @@
   )
 )
 
-; ; task 2
+; task 2
 ; (define (many-replace replacement-pairs lst)
 ;   (let 
 ;     ((reversed-replaced 
@@ -120,16 +114,7 @@
 ;         )
 ;       )
 ;     ))
-;     (let rec-reverse 
-;       (
-;         (left '())
-;         (right reversed-replaced)
-;       )
-;       (if (null? right)
-;         left
-;         (rec-reverse (cons (car right) left) (cdr right))
-;       )
-;     )
+;     (reverse reversed-replaced)
 ;   )
 ; )
 
