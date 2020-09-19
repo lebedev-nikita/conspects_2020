@@ -43,17 +43,38 @@
   )
 )
 
-(define (process lst)
 
+(define (sum lst)
+  (foldl + 0 lst)
 )
 
-(fib-list 1)
-(fib-list 2)
-(fib-list 3)
-(fib-list 4)
-(fib-list 5)
-(fib-list 6)
-(fib-list 7)
-(fib-list 8)
-(list-fib-squares-a 8)
-(list-fib-squares-b 8)
+(define (mul lst)
+  (foldl * 1 lst)
+)
+
+(define (process lst)
+  (let ((first-mul (mul (car lst))))
+    (filter
+      (lambda (sublst)
+        (< first-mul (sum sublst))
+      )
+      lst
+    )
+  )
+)
+
+; (fib-list 1)
+; (fib-list 2)
+; (fib-list 3)
+; (fib-list 4)
+; (fib-list 5)
+; (fib-list 6)
+; (fib-list 7)
+; (fib-list 8)
+; (list-fib-squares-a 8)
+; (list-fib-squares-b 8)
+
+; (sum '(1 2 3))
+; (mul '(1 2 3))
+
+(process '((1 2 3) (2 3 5) (1 1 1)))
