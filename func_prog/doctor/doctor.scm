@@ -4,7 +4,16 @@
 ; task 5
 ; параметр num - сколько еще пациентов доктор может принять
 (define (visit-doctor stop-word num)
-  (if (< 0 num)
+  (define (ask-patient-name)
+    (begin
+      (println '(next!))
+      (println '(who are you?))
+      (print '**)
+      (car (read))
+    ) 
+  )
+  (if (>= 0 num)
+    '(time to go home)
     (let ((name (ask-patient-name)))
       (if (equal? name stop-word)
         '(working day finished)
@@ -16,91 +25,84 @@
         )
       )
     )
-    '(time to go home)
   )
 )
 
-(define (ask-patient-name)
-  (begin
-    (println '(next!))
-    (println '(who are you?))
-    (print '**)
-    (car (read))
-  ) 
-)
-; цикл диалога Доктора с пациентом
-; параметр name -- имя пациента
-                                 ; task 4
 (define (doctor-driver-loop name old-phrases)
-    (newline)
-    (print '**) ; доктор ждёт ввода реплики пациента, приглашением к которому является **
-    (let ((user-response (read)))
-      (cond 
-	    ((equal? user-response '(goodbye)) ; реплика '(goodbye) служит для выхода из цикла
-             (printf "Goodbye, ~a!\n" name)
-             (print '(see you next week))
-             (newline))
-            (else (print (reply user-response old-phrases)) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
-                  (doctor-driver-loop name (cons user-response old-phrases))
-            )
+  (newline)
+  (print '**) ; доктор ждёт ввода реплики пациента, приглашением к которому является **
+  (let ((user-response (read)))
+    (cond 
+      ((equal? user-response '(goodbye)) ; реплика '(goodbye) служит для выхода из цикла
+            (printf "Goodbye, ~a!\n" name)
+            (print '(see you next week))
+            (newline)
+      )
+      (else (print (reply user-response old-phrases)) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
+            (doctor-driver-loop name (cons user-response old-phrases))
       )
     )
+  )
 )
 
 ; генерация ответной реплики по user-response -- реплике от пользователя 
 (define (reply user-response old-phrases)
-  ; task 4
-  (let* 
+  (let retry
     (
-      (min-variants 2)
-      (flag1 (if (null? old-phrases) 0 1))
-      (flag2 (if (has-keywords user-response word-groups) 1 0))
-      (num-variants (+ min-variants flag1 flag2))
+      (flag0 #t)
+      (flag1 #t)
+      (flag2 (not (null? old-phrases)))
+      (flag3 (has-keywords user-response))
     )
-    (case (random num-variants)
-      ((0) (qualifier-answer user-response)) ; 1й способ
-      ((1) (hedge))  ; 2й способ
-      ((2) (kw-answer user-response word-groups)) ; 4й способ
-      ((3) (history-answer old-phrases)) ; 3й способ
+    (let ((rnd (random 4)))
+      (case rnd
+        ((0) (qualifier-answer user-response)) ; 1й способ
+        ((1) (hedge))  ; 2й способ
+        ((2) (if flag2
+          (history-answer old-phrases) ; 3й способ
+          (retry flag0 flag1 flag2 flag3)
+        )) 
+        ((3) (if flag3
+          (keyword-answer user-response) ; 4й способ
+          (retry flag0 flag1 flag2 flag3)
+        )) 
+      )
     )
   )
 )
 
 ; task 6
-(define (kw-answer user-response word-groups)
+(define (keyword-answer user-response)
   (let* 
     (
-      (match-words (find-keywords user-response word-groups))
-      (chosen-word (pick-random match-words))
-      (match-groups (find-groups chosen-word word-groups) )
-      (chosen-group (pick-random match-groups))
-      (chosen-template (pick-random (cadr chosen-group)))
+      (chosen-word (pick-random (find-keywords user-response)))
+      (chosen-template (pick-random (find-templates chosen-word)) )
       (response (many-replace (list (list '* chosen-word)) chosen-template))
     )
     response
   )
 )
 
-(define (test) (kw-answer '(i am depressed) word-groups))
+(define (test) (keyword-answer '(i argued with my father)))
 			
 ; 1й способ генерации ответной реплики -- замена лица в реплике пользователя и приписывание к результату нового начала
 (define (qualifier-answer user-response)
-        (append (pick-random '(
-                                (you seem to think that)
-                                (you feel that)
-                                (why do you believe that)
-                                (why do you say that)
-                                ; task 1
-                                (do you mean that)
-                                (so you are saying that)
-                                (why do you feel that)
-                              )
-                )
-                (change-person user-response)
-        )
+  (append 
+    (pick-random 
+      '(
+        (you seem to think that)
+        (you feel that)
+        (why do you believe that)
+        (why do you say that)
+        (do you mean that)
+        (so you are saying that)
+        (why do you feel that)
+      )
+    )
+    (change-person user-response)
+  )
 )
 
-; task 4
 (define (history-answer old-phrases) 
   (append '(earlier you said that) (change-person (pick-random old-phrases)))
 )
@@ -141,7 +143,7 @@
     (
       (tell me more about your * , i want to know all about your *)
       (why do you feel that way about your * ?)
-      (i dont have a *)
+      (i dont have *)
       (at least your * is alive!)
     )
   )
@@ -165,10 +167,20 @@
     (money work debt loan)
     (
       (have you ever thought of becoming homeless? they are so carefree)
-      (they killed my uncle because of *)
+      (they killed my uncle because of his *)
     )
   )
 ))
+
+(define keywords 
+  (foldl
+    (lambda (wg init)
+      (append (car wg) init)
+    )
+    '()
+    word-groups
+  )
+)
 
 (define (includes lst word)
   (ormap 
@@ -177,7 +189,7 @@
   )
 )
 
-(define (find-groups word word-groups)
+(define (find-word-groups word)
   (filter 
     (lambda (wg)
       (includes (car wg) word)
@@ -186,21 +198,35 @@
   )
 )
 
-(define (find-keywords lst word-groups)
+(define (find-templates word)
+  (foldl 
+    (lambda (wg init)
+      (if (includes (car wg) word)
+        (append (cadr wg) init)
+        init
+      )
+    )
+    '()
+    word-groups
+  )
+)
+
+(define (find-keywords lst)
   (filter 
     (lambda (word)
-      (not (null? (find-groups word word-groups) ))
+      (includes keywords word)
     )
     lst
   )
 )
 
-(define (has-keywords lst word-groups)
-  (not (null? (find-keywords lst word-groups)))
+(define (has-keywords lst)
+  (ormap 
+    (lambda (word) (includes keywords word))
+    lst
+  )
 )
 
-
-; task 3
 (define (many-replace replacement-pairs lst)
   (map 
     (lambda (word)
@@ -214,14 +240,15 @@
 
 ; 2й способ генерации ответной реплики -- случайный выбор одной из заготовленных фраз, не связанных с репликой пользователя
 (define (hedge)
-        (pick-random '((please go on)
-                        (many people have the same sorts of feelings)
-                        (many of my patients have told me the same thing)
-                        (please continue)
-                        ; task 1
-                        (intresting)
-                        (I understand you)
-                        (please tell more about it)
-                      )
-        )
+  (pick-random 
+    '(
+      (please go on)
+      (many people have the same sorts of feelings)
+      (many of my patients have told me the same thing)
+      (please continue)
+      (intresting)
+      (I understand you)
+      (please tell more about it)
+    )
+  )
 )
