@@ -1,6 +1,5 @@
 #lang scheme/base
 
-(define (test) (visit-doctor 'stop 3))
 
 ; task 5
 ; параметр num - сколько еще пациентов доктор может принять
@@ -67,18 +66,22 @@
   )
 )
 
-(define tmp-response '(first * second *)) ; TODO: удалить
-
+; task 6
 (define (kw-answer user-response word-groups)
   (let* 
     (
-      (kws (find-keywords user-response word-groups))
-      (chosen-word (pick-random kws))
-      (response (many-replace (list (list '* chosen-word)) tmp-response)) ; TODO: заменить tmp-response
+      (match-words (find-keywords user-response word-groups))
+      (chosen-word (pick-random match-words))
+      (match-groups (find-groups chosen-word word-groups) )
+      (chosen-group (pick-random match-groups))
+      (chosen-template (pick-random (cadr chosen-group)))
+      (response (many-replace (list (list '* chosen-word)) chosen-template))
     )
-    (list kws chosen-word response)
+    response
   )
 )
+
+(define (test) (kw-answer '(i am depressed) keywords))
 			
 ; 1й способ генерации ответной реплики -- замена лица в реплике пользователя и приписывание к результату нового начала
 (define (qualifier-answer user-response)
@@ -124,8 +127,47 @@
 )
   
 (define keywords '(
-  (depressed suicide exams university)
-  (mother father parents brother sister uncle ant grandma grandpa exams) ; TODO: удалить exams
+  (
+    (depressed suicide exams university)
+    (
+      (when you feel depressed, go out for ice cream)
+      (depression is a disease that can be treated)
+      (depression can be defeated)
+      (depression is for loosers!)
+    )
+  )
+  (
+    (mother father parents brother sister uncle ant grandma grandpa)
+    (
+      (tell me more about your * , i want to know all about your *)
+      (why do you feel that way about your * ?)
+      (i dont have a *)
+      (at least your * is alive!)
+    )
+  )
+  (
+    (university scheme lections)
+    (
+      (your education is important)
+      (how many time do you spend to learning ?)
+      (i guess, we are all talented in some way...)
+      (nobody watches the diploma anyway)
+    )
+  )
+  (
+    (friend girlfriend wife husband)
+    (
+      (do you really need such * ?)
+      (be careful, your * might be plotting against you...)
+    )
+  )
+  (
+    (money work debt loan)
+    (
+      (have you ever thought of becoming homeless? they are so carefree)
+      (they killed my uncle because of *)
+    )
+  )
 ))
 
 (define (includes lst word)
@@ -137,8 +179,8 @@
 
 (define (find-groups word word-groups)
   (filter 
-    (lambda (lst)
-      (includes lst word)
+    (lambda (wg)
+      (includes (car wg) word)
     )
     word-groups
   )
@@ -157,10 +199,8 @@
   (not (null? (find-keywords lst word-groups)))
 )
 
-; (define (prepare-answer lst word-groups))
 
-
-; ; task 3
+; task 3
 (define (many-replace replacement-pairs lst)
   (map 
     (lambda (word)
