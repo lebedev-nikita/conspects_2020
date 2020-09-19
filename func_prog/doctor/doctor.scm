@@ -51,25 +51,46 @@
 ; генерация ответной реплики по user-response -- реплике от пользователя 
 (define (reply user-response old-phrases)
   ; task 4
-  (let ((num-variants (if (null? old-phrases) 2 3))) ; history-answer недоступен при обработке первой фразы 
-    (case (random num-variants)
-        ((0) (qualifier-answer user-response)) ; 1й способ
-        ((1) (hedge))  ; 2й способ
-        ((2) (history-answer old-phrases)) ; 3й способ
+  (let* 
+    (
+      (min-variants 2)
+      (flag1 (if (null? old-phrases) 0 1))
+      (flag2 (if (has-keywords user-response keywords) 1 0))
+      (num-variants (+ min-variants flag1 flag2))
     )
+    (case (random num-variants)
+      ((0) (qualifier-answer user-response)) ; 1й способ
+      ((1) (hedge))  ; 2й способ
+      ((2) (kw-answer user-response keywords)) ; 4й способ
+      ((3) (history-answer old-phrases)) ; 3й способ
+    )
+  )
+)
+
+(define tmp-response '(first * second *)) ; TODO: удалить
+
+(define (kw-answer user-response word-groups)
+  (let* 
+    (
+      (kws (find-keywords user-response word-groups))
+      (chosen-word (pick-random kws))
+      (response (many-replace (list (list '* chosen-word)) tmp-response)) ; TODO: заменить tmp-response
+    )
+    (list kws chosen-word response)
   )
 )
 			
 ; 1й способ генерации ответной реплики -- замена лица в реплике пользователя и приписывание к результату нового начала
 (define (qualifier-answer user-response)
-        (append (pick-random '((you seem to think that)
-                               (you feel that)
-                               (why do you believe that)
-                               (why do you say that)
-                               ; task 1
-                               (do you mean that)
-                               (so you are saying that)
-                               (why do you feel that)
+        (append (pick-random '(
+                                (you seem to think that)
+                                (you feel that)
+                                (why do you believe that)
+                                (why do you say that)
+                                ; task 1
+                                (do you mean that)
+                                (so you are saying that)
+                                (why do you feel that)
                               )
                 )
                 (change-person user-response)
@@ -135,6 +156,9 @@
 (define (has-keywords lst word-groups)
   (not (null? (find-keywords lst word-groups)))
 )
+
+; (define (prepare-answer lst word-groups))
+
 
 ; ; task 3
 (define (many-replace replacement-pairs lst)
