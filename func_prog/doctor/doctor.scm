@@ -54,13 +54,13 @@
     (
       (min-variants 2)
       (flag1 (if (null? old-phrases) 0 1))
-      (flag2 (if (has-keywords user-response keywords) 1 0))
+      (flag2 (if (has-keywords user-response word-groups) 1 0))
       (num-variants (+ min-variants flag1 flag2))
     )
     (case (random num-variants)
       ((0) (qualifier-answer user-response)) ; 1й способ
       ((1) (hedge))  ; 2й способ
-      ((2) (kw-answer user-response keywords)) ; 4й способ
+      ((2) (kw-answer user-response word-groups)) ; 4й способ
       ((3) (history-answer old-phrases)) ; 3й способ
     )
   )
@@ -81,7 +81,7 @@
   )
 )
 
-(define (test) (kw-answer '(i am depressed) keywords))
+(define (test) (kw-answer '(i am depressed) word-groups))
 			
 ; 1й способ генерации ответной реплики -- замена лица в реплике пользователя и приписывание к результату нового начала
 (define (qualifier-answer user-response)
@@ -126,7 +126,7 @@
                       phrase)
 )
   
-(define keywords '(
+(define word-groups '(
   (
     (depressed suicide exams university)
     (
@@ -215,13 +215,13 @@
 ; 2й способ генерации ответной реплики -- случайный выбор одной из заготовленных фраз, не связанных с репликой пользователя
 (define (hedge)
         (pick-random '((please go on)
-                       (many people have the same sorts of feelings)
-                       (many of my patients have told me the same thing)
-                       (please continue)
-                       ; task 1
-                       (intresting)
-                       (I understand you)
-                       (please tell more about it)
+                        (many people have the same sorts of feelings)
+                        (many of my patients have told me the same thing)
+                        (please continue)
+                        ; task 1
+                        (intresting)
+                        (I understand you)
+                        (please tell more about it)
                       )
         )
 )
