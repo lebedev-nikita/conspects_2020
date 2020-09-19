@@ -1,9 +1,9 @@
 #lang scheme/base
 
 (define (test) (visit-doctor 'stop 3))
-; основная функция, запускающая "Доктора"
-; параметр num - сколько еще пациентов доктор может принять
+
 ; task 5
+; параметр num - сколько еще пациентов доктор может принять
 (define (visit-doctor stop-word num)
   (if (< 0 num)
     (let ((name (ask-patient-name)))
@@ -102,6 +102,40 @@
                       phrase)
 )
   
+(define keywords '(
+  (depressed suicide exams university)
+  (mother father parents brother sister uncle ant grandma grandpa exams) ; TODO: удалить exams
+))
+
+(define (includes lst word)
+  (ormap 
+    (lambda (elem) (equal? elem word))
+    lst
+  )
+)
+
+(define (find-groups word word-groups)
+  (filter 
+    (lambda (lst)
+      (includes lst word)
+    )
+    word-groups
+  )
+)
+
+(define (find-keywords lst word-groups)
+  (filter 
+    (lambda (word)
+      (not (null? (find-groups word word-groups) ))
+    )
+    lst
+  )
+)
+
+(define (has-keywords lst word-groups)
+  (not (null? (find-keywords lst word-groups)))
+)
+
 ; ; task 3
 (define (many-replace replacement-pairs lst)
   (map 
@@ -113,29 +147,6 @@
     lst
   )
 )
-
-; task 2
-; (define (many-replace replacement-pairs lst)
-;   (let 
-;     ((reversed-replaced 
-;       (let rec-replace 
-;         (
-;           (left '())
-;           (right lst)
-;         )
-;         (if (null? right)
-;           left
-;           (let ((pat-rep (assoc (car right) replacement-pairs))) ; пара (ключ значение) или () ) ; Доктор ищет первый элемент списка в ассоциативном списке замен
-;             (let ((new-val (if pat-rep (cadr pat-rep) (car right)))) 
-;               (rec-replace (cons new-val left) (cdr right))
-;             )
-;           )
-;         )
-;       )
-;     ))
-;     (reverse reversed-replaced)
-;   )
-; )
 
 ; 2й способ генерации ответной реплики -- случайный выбор одной из заготовленных фраз, не связанных с репликой пользователя
 (define (hedge)
