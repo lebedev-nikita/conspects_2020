@@ -47,26 +47,25 @@
 
 ; генерация ответной реплики по user-response -- реплике от пользователя 
 (define (reply user-response old-phrases)
-  (let retry
+  (let*
     (
-      (flag0 #t)
-      (flag1 #t)
       (flag2 (not (null? old-phrases)))
       (flag3 (has-keywords user-response))
+      (num-variants (cond
+        ((and flag2 flag3) 4)
+        ((or flag2 flag3) 3)
+        (else 2)
+      ))
+      (rnd (random num-variants))
     )
-    (let ((rnd (random 4)))
-      (case rnd
-        ((0) (qualifier-answer user-response)) ; 1й способ
-        ((1) (hedge))  ; 2й способ
-        ((2) (if flag2
-          (history-answer old-phrases) ; 3й способ
-          (retry flag0 flag1 flag2 flag3)
-        )) 
-        ((3) (if flag3
-          (keyword-answer user-response) ; 4й способ
-          (retry flag0 flag1 flag2 flag3)
-        )) 
-      )
+    (case rnd
+      ((0) (qualifier-answer user-response)) ; 1й способ
+      ((1) (hedge))  ; 2й способ
+      ((2) (if flag2
+        (history-answer old-phrases) ; 3й способ
+        (keyword-answer user-response) ; 4й способ
+      )) 
+      ((3) (keyword-answer user-response)) ; 4й способ
     )
   )
 )
@@ -182,26 +181,10 @@
   )
 )
 
-(define (includes lst word)
-  (ormap 
-    (lambda (elem) (equal? elem word))
-    lst
-  )
-)
-
-(define (find-word-groups word)
-  (filter 
-    (lambda (wg)
-      (includes (car wg) word)
-    )
-    word-groups
-  )
-)
-
 (define (find-templates word)
   (foldl 
     (lambda (wg init)
-      (if (includes (car wg) word)
+      (if (member word (car wg))
         (append (cadr wg) init)
         init
       )
@@ -214,7 +197,7 @@
 (define (find-keywords lst)
   (filter 
     (lambda (word)
-      (includes keywords word)
+      (member word keywords)
     )
     lst
   )
@@ -222,7 +205,7 @@
 
 (define (has-keywords lst)
   (ormap 
-    (lambda (word) (includes keywords word))
+    (lambda (word) (member word keywords))
     lst
   )
 )
