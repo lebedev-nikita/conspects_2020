@@ -1,9 +1,7 @@
 #lang scheme/base
 
-
-; task 5
 ; параметр num - сколько еще пациентов доктор может принять
-(define (visitDoctor stopWord num)
+(define (visit-doctor stopWord num)
   (define (askPatientName)
     (begin
       (println '(next!))
@@ -21,7 +19,7 @@
           (printf "Hello, ~a!\n" name)
           (print '(what seems to be the trouble?))
           (doctorDriverLoop name '())
-          (visitDoctor stopWord (- num 1))
+          (visit-doctor stopWord (- num 1))
         )
       )
     )
@@ -43,8 +41,8 @@
       (else 
         (print 
           (generalizedReply strategies (list
-              '('userResponse userResponse) 
-              '('oldPhrases oldPhrases)
+              (list 'userResponse userResponse) 
+              (list 'oldPhrases oldPhrases)
           ))
         ) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
         (doctorDriverLoop name (cons userResponse oldPhrases))
@@ -81,48 +79,91 @@
   )
 )
 
+; task 7
 (define strategies (list
   ; (predicate weight function)
   (list 
     (lambda (assocParamList) #t) 
     1 
     (lambda (assocParamList)
-      (let ((userResponse (assoc 'userResponse assocParamList)))
+      (let ((userResponse (cadr (assoc 'userResponse assocParamList))))
         (qualifierAnswer userResponse)
       )
     )
   )
-  ; (list
-  ;   (lambda (assocParamList) #t) 
-  ;   2 
-  ;   (lambda (assocParamList) (hedge))
-  ; )
-  ; (
-  ;   (lambda (assocParamList) (null? (assoc 'oldPhrases assocParamList))) 
-  ;   3 
-  ;   (lambda (assocParamList)
-  ;     (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
-  ;       (historyAnswer oldPhrases)
-  ;     )
-  ;   )
-  ; )
-  ; (
-  ;   (lambda (assocParamList) 
-  ;     (let ((userResponse (assoc 'userResponse assocParamList)))
-  ;       (hasKeywords userResponse)
-  ;     )
-  ;   ) 
-  ;   4 
-  ;   (lambda (assocParamList)
-  ;     (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
-  ;       (historyAnswer oldPhrases)
-  ;     )
-  ;   )
-  ; )
+  (list
+    (lambda (assocParamList) #t) 
+    2 
+    (lambda (assocParamList) (hedge))
+  )
+  (list
+    (lambda (assocParamList) (not (null? (cadr (assoc 'oldPhrases assocParamList))))) 
+    3
+    (lambda (assocParamList)
+      (let ((oldPhrases (cadr (assoc 'oldPhrases assocParamList))))
+        (historyAnswer oldPhrases)
+      )
+    )
+  )
+  (list
+    (lambda (assocParamList) 
+      (let ((userResponse (cadr (assoc 'userResponse assocParamList))))
+        (hasKeywords userResponse)
+      )
+    ) 
+    4
+    (lambda (assocParamList)
+      (let ((userResponse (cadr (assoc 'userResponse assocParamList))))
+        (keywordAnswer userResponse)
+      )
+    )
+  )
 ))
 
 ; task 7
 (define (generalizedReply strategies assocParamsLst)
+  (define (filterByPredicate strategies assocParamList)
+    (filter  
+      (lambda (strtg) 
+        (let ((predicate (car strtg)))
+        ; #t
+          (predicate assocParamList)
+        )
+      )
+      strategies
+    )
+  )
+  ; lst: ((weight function) (weight function) ...)
+  (define (findByWeightAndRand lst rand)
+    (let* 
+      (
+        (this (car lst))
+        (thisWeight (car this))
+        (thisFunction (cadr this))
+      )
+      (if (< rand thisWeight)
+        thisFunction
+        (findByWeightAndRand (cdr lst) (- rand thisWeight))
+      )
+    )
+  )
+  ; lst: ((weight function) (weight function) ...)
+  (define (pickRandomWithWeight lst)
+    (let* 
+      (
+        (maxRandom
+          (foldl 
+            (lambda (x init) (+ init (car x)))
+            0
+            lst
+          )
+        )
+        (rand (random maxRandom))
+      )
+      (findByWeightAndRand lst rand)
+    )
+  )
+
   (let* 
     (
       (filteredStrategies (filterByPredicate strategies assocParamsLst))
@@ -133,126 +174,6 @@
   )
 )
 
-(define (filterByPredicate strategies assocParamList)
-  (filter  
-    (lambda (strtg) 
-      (let ((predicate (car strtg)))
-      ; #t
-        (predicate assocParamList)
-      )
-    )
-    strategies
-  )
-)
-
-
-(define (pickRandomWithWeight lst)
-  (let* 
-    (
-      (maxRandom
-        (foldl 
-          (lambda (x init) (+ init (car x)))
-          0
-          lst
-        )
-      )
-      (rand (random maxRandom))
-    )
-    (findByWeightAndRand lst rand)
-  )
-)
-
-
-; lst: (weight function)
-
-(define (findByWeightAndRand lst rand)
-  (let* 
-    (
-      (this (car lst))
-      (thisWeight (car this))
-      (thisFunction (cadr this))
-    )
-    (if (< rand thisWeight)
-      thisFunction
-      (findByWeightAndRand (cdr lst) (- rand thisWeight))
-    )
-  )
-)
-
-; ====== tests ====== 
-(define (ttttest) 
-  (filterByPredicate 
-    strategies
-    '()
-    ; (list
-    ;   (list ; пример стратегии
-    ;     (lambda (assocParamList) #t) ; предикат
-    ;     1 ; остальное
-    ;   )
-    ;   (list
-    ;     (lambda (assocParamList) #t)
-    ;     2
-    ;   )
-    ; )
-    ; #()
-  )
-)
-
-(define (tttest)
-  (let ((lst (ttest 1000)))
-    (list 
-      (count 1 lst)
-      (count 2 lst)
-      (count 3 lst)
-      (count 4 lst)
-    )
-  )
-)
-
-(define (count n lst) 
-  (foldl 
-    (lambda (x init)
-      (if (= x n)
-        (+ 1 init)
-        init
-      )
-    )
-    0
-    lst
-  )
-)
-
-(define (ttest n)
-  (if (= 0 n)
-    (cons (test) '())
-    (cons (test) (ttest (- n 1)))
-  )
-)
-
-(define (test) 
-  (pickRandomWithWeight '(
-    (1 1)
-    (2 2)
-    (3 3)
-    (4 4)
-  ))
-)
-
-; (define (test n) 
-;   (findByWeightAndRand 
-;     '(
-;       (1 1)
-;       (2 2)
-;       (3 3)
-;       (4 4)
-;     ) 
-;     n
-;   )
-; )
-
-
-
-; task 6
 (define (keywordAnswer userResponse)
   (let* 
     (
