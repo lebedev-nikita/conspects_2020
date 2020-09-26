@@ -40,41 +40,13 @@
       )
       (else 
         (print 
-          (generalizedReply strategies (list
+          (reply strategies (list
               (list 'userResponse userResponse) 
               (list 'oldPhrases oldPhrases)
           ))
         ) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
         (doctorDriverLoop name (cons userResponse oldPhrases))
       )
-      ; (else (print (reply userResponse oldPhrases)) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
-      ;       (doctorDriverLoop name (cons userResponse oldPhrases))
-      ; )
-    )
-  )
-)
-
-; генерация ответной реплики по userResponse - реплике от пользователя 
-(define (reply userResponse oldPhrases)
-  (let*
-    (
-      (flag2 (not (null? oldPhrases)))
-      (flag3 (hasKeywords userResponse))
-      (numVariants (cond
-        ((and flag2 flag3) 4)
-        ((or flag2 flag3) 3)
-        (else 2)
-      ))
-      (rnd (random numVariants))
-    )
-    (case rnd
-      ((0) (qualifierAnswer userResponse)) ; 1й способ
-      ((1) (hedge))  ; 2й способ
-      ((2) (if flag2
-        (historyAnswer oldPhrases) ; 3й способ
-        (keywordAnswer userResponse) ; 4й способ
-      )) 
-      ((3) (keywordAnswer userResponse)) ; 4й способ
     )
   )
 )
@@ -121,7 +93,8 @@
 ))
 
 ; task 7
-(define (generalizedReply strategies assocParamsLst)
+; генерация ответной реплики по userResponse - реплике от пользователя 
+(define (reply strategies assocParamsLst)
   (define (filterByPredicate strategies assocParamList)
     (filter  
       (lambda (strtg) 
