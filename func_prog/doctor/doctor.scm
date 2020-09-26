@@ -42,7 +42,7 @@
       )
       (else 
         (print 
-          (generalizedReply (list
+          (generalizedReply strategies (list
               '('userResponse userResponse) 
               '('oldPhrases oldPhrases)
           ))
@@ -81,9 +81,9 @@
   )
 )
 
-(define strategies '(
+(define strategies (list
   ; (predicate weight function)
-  (
+  (list 
     (lambda (assocParamList) #t) 
     1 
     (lambda (assocParamList)
@@ -92,33 +92,33 @@
       )
     )
   )
-  (
-    (lambda (assocParamList) #t) 
-    2 
-    (lambda (assocParamList) (hedge))
-  )
-  (
-    (lambda (assocParamList) (null? (assoc 'oldPhrases assocParamList))) 
-    3 
-    (lambda (assocParamList)
-      (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
-        (historyAnswer oldPhrases)
-      )
-    )
-  )
-  (
-    (lambda (assocParamList) 
-      (let ((userResponse (assoc 'userResponse assocParamList)))
-        (hasKeywords userResponse)
-      )
-    ) 
-    4 
-    (lambda (assocParamList)
-      (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
-        (historyAnswer oldPhrases)
-      )
-    )
-  )
+  ; (list
+  ;   (lambda (assocParamList) #t) 
+  ;   2 
+  ;   (lambda (assocParamList) (hedge))
+  ; )
+  ; (
+  ;   (lambda (assocParamList) (null? (assoc 'oldPhrases assocParamList))) 
+  ;   3 
+  ;   (lambda (assocParamList)
+  ;     (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
+  ;       (historyAnswer oldPhrases)
+  ;     )
+  ;   )
+  ; )
+  ; (
+  ;   (lambda (assocParamList) 
+  ;     (let ((userResponse (assoc 'userResponse assocParamList)))
+  ;       (hasKeywords userResponse)
+  ;     )
+  ;   ) 
+  ;   4 
+  ;   (lambda (assocParamList)
+  ;     (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
+  ;       (historyAnswer oldPhrases)
+  ;     )
+  ;   )
+  ; )
 ))
 
 ; task 7
@@ -182,17 +182,19 @@
 ; ====== tests ====== 
 (define (ttttest) 
   (filterByPredicate 
-    (list
-      (list ; пример стратегии
-        (lambda (assocParamList) #t) ; предикат
-        1 ; остальное
-      )
-      (list
-        (lambda (assocParamList) #t)
-        2
-      )
-    )
-    #()
+    strategies
+    '()
+    ; (list
+    ;   (list ; пример стратегии
+    ;     (lambda (assocParamList) #t) ; предикат
+    ;     1 ; остальное
+    ;   )
+    ;   (list
+    ;     (lambda (assocParamList) #t)
+    ;     2
+    ;   )
+    ; )
+    ; #()
   )
 )
 
