@@ -69,10 +69,70 @@
     )
   )
 )
-; task 7
-; (define (generalized-reply strategies param-list)
 
-; )
+(define strategies (
+  (predicate weight function)
+  (
+    (lambda (assoc-param-list) #t) 
+    1 
+    (lambda (assoc-param-list)
+      (let ((user-response (assoc 'user-response assoc-param-list)))
+        (qualifier-answer user-response)
+      )
+    )
+  )
+  (
+    (lambda (assoc-param-list) #t) 
+    2 
+    (lambda (assoc-param-list) (hedge))
+  )
+  (
+    (lambda (assoc-param-list) (null? (assoc 'old-phrases assoc-param-list))) 
+    3 
+    (lambda (assoc-param-list)
+      (let ((old-phrases (assoc 'old-phrases assoc-param-list)))
+        (history-answer old-phrases)
+      )
+    )
+  )
+  (
+    (lambda (assoc-param-list) 
+      (let ((user-response (assoc 'user-response assoc-param-list)))
+        (has-keywords user-response)
+      )
+    ) 
+    4 
+    (lambda (assoc-param-list)
+      (let ((old-phrases (assoc 'old-phrases assoc-param-list)))
+        (history-answer old-phrases)
+      )
+    )
+  )
+))
+
+; task 7
+(define (generalized-reply strategies assoc-params-lst)
+  (let* 
+    (
+      (filtered-strategies (filter-by-predicate strategies assoc-params-lst))
+      (weighted-list (map cdr filtered-strategies))
+      (function (pick-random-with-weight weighted-list))
+    )
+    (function assoc-params-lst)
+  )
+)
+
+(define (filter-by-predicate strategies param-vector)
+  (filter  
+    (lambda (strtg) 
+      (let ((predicate (car strtg)))
+      ; #t
+        (predicate param-vector)
+      )
+    )
+    strategies
+  )
+)
 
 
 (define (pick-random-with-weight lst)
@@ -91,9 +151,6 @@
   )
 )
 
-; (define strategies (
-;   (predicate weight function)
-; ))
 
 ; lst: (weight function)
 
@@ -111,16 +168,20 @@
   )
 )
 
-(define (count n lst) 
-  (foldl 
-    (lambda (x init)
-      (if (= x n)
-        (+ 1 init)
-        init
+; ====== tests ====== 
+(define (ttttest) 
+  (filter-by-predicate 
+    (list
+      (list ; пример стратегии
+        (lambda (param-vector) #t) ; предикат
+        1 ; остальное
+      )
+      (list
+        (lambda (param-vector) #t)
+        2
       )
     )
-    0
-    lst
+    #()
   )
 )
 
@@ -134,6 +195,20 @@
     )
   )
 )
+
+(define (count n lst) 
+  (foldl 
+    (lambda (x init)
+      (if (= x n)
+        (+ 1 init)
+        init
+      )
+    )
+    0
+    lst
+  )
+)
+
 (define (ttest n)
   (if (= 0 n)
     (cons (test) '())
