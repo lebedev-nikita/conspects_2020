@@ -69,6 +69,100 @@
     )
   )
 )
+; task 7
+; (define (generalized-reply strategies param-list)
+
+; )
+
+
+(define (pick-random-with-weight lst)
+  (let* 
+    (
+      (max-random
+        (foldl 
+          (lambda (x init) (+ init (car x)))
+          0
+          lst
+        )
+      )
+      (rand (random max-random))
+    )
+    (find-by-weight-and-rand lst rand)
+  )
+)
+
+; (define strategies (
+;   (predicate weight function)
+; ))
+
+; lst: (weight function)
+
+(define (find-by-weight-and-rand lst rand)
+  (let* 
+    (
+      (this (car lst))
+      (this-weight (car this))
+      (this-function (cadr this))
+    )
+    (if (< rand this-weight)
+      this-function
+      (find-by-weight-and-rand (cdr lst) (- rand this-weight))
+    )
+  )
+)
+
+(define (count n lst) 
+  (foldl 
+    (lambda (x init)
+      (if (= x n)
+        (+ 1 init)
+        init
+      )
+    )
+    0
+    lst
+  )
+)
+
+(define (tttest)
+  (let ((lst (ttest 1000)))
+    (list 
+      (count 1 lst)
+      (count 2 lst)
+      (count 3 lst)
+      (count 4 lst)
+    )
+  )
+)
+(define (ttest n)
+  (if (= 0 n)
+    (cons (test) '())
+    (cons (test) (ttest (- n 1)))
+  )
+)
+
+(define (test) 
+  (pick-random-with-weight '(
+    (1 1)
+    (2 2)
+    (3 3)
+    (4 4)
+  ))
+)
+
+; (define (test n) 
+;   (find-by-weight-and-rand 
+;     '(
+;       (1 1)
+;       (2 2)
+;       (3 3)
+;       (4 4)
+;     ) 
+;     n
+;   )
+; )
+
+
 
 ; task 6
 (define (keyword-answer user-response)
@@ -81,8 +175,6 @@
     response
   )
 )
-
-(define (test) (keyword-answer '(i argued with my father)))
 			
 ; 1й способ генерации ответной реплики -- замена лица в реплике пользователя и приписывание к результату нового начала
 (define (qualifier-answer user-response)
