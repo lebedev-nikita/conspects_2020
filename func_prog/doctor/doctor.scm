@@ -3,8 +3,8 @@
 
 ; task 5
 ; параметр num - сколько еще пациентов доктор может принять
-(define (visit-doctor stop-word num)
-  (define (ask-patient-name)
+(define (visitDoctor stopWord num)
+  (define (askPatientName)
     (begin
       (println '(next!))
       (println '(who are you?))
@@ -14,120 +14,131 @@
   )
   (if (>= 0 num)
     '(time to go home)
-    (let ((name (ask-patient-name)))
-      (if (equal? name stop-word)
+    (let ((name (askPatientName)))
+      (if (equal? name stopWord)
         '(working day finished)
         (begin
           (printf "Hello, ~a!\n" name)
           (print '(what seems to be the trouble?))
-          (doctor-driver-loop name '())
-          (visit-doctor stop-word (- num 1))
+          (doctorDriverLoop name '())
+          (visitDoctor stopWord (- num 1))
         )
       )
     )
   )
 )
 
-(define (doctor-driver-loop name old-phrases)
+(define (t) (doctorDriverLoop 'Nikita '()))
+
+(define (doctorDriverLoop name oldPhrases)
   (newline)
   (print '**) ; доктор ждёт ввода реплики пациента, приглашением к которому является **
-  (let ((user-response (read)))
+  (let ((userResponse (read)))
     (cond 
-      ((equal? user-response '(goodbye)) ; реплика '(goodbye) служит для выхода из цикла
+      ((equal? userResponse '(goodbye)) ; реплика '(goodbye) служит для выхода из цикла
             (printf "Goodbye, ~a!\n" name)
             (print '(see you next week))
             (newline)
       )
-      (else (print (reply user-response old-phrases)) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
-            (doctor-driver-loop name (cons user-response old-phrases))
+      (else 
+        (print 
+          (generalizedReply (list
+              '('userResponse userResponse) 
+              '('oldPhrases oldPhrases)
+          ))
+        ) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
+        (doctorDriverLoop name (cons userResponse oldPhrases))
       )
+      ; (else (print (reply userResponse oldPhrases)) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
+      ;       (doctorDriverLoop name (cons userResponse oldPhrases))
+      ; )
     )
   )
 )
 
-; генерация ответной реплики по user-response -- реплике от пользователя 
-(define (reply user-response old-phrases)
+; генерация ответной реплики по userResponse - реплике от пользователя 
+(define (reply userResponse oldPhrases)
   (let*
     (
-      (flag2 (not (null? old-phrases)))
-      (flag3 (has-keywords user-response))
-      (num-variants (cond
+      (flag2 (not (null? oldPhrases)))
+      (flag3 (hasKeywords userResponse))
+      (numVariants (cond
         ((and flag2 flag3) 4)
         ((or flag2 flag3) 3)
         (else 2)
       ))
-      (rnd (random num-variants))
+      (rnd (random numVariants))
     )
     (case rnd
-      ((0) (qualifier-answer user-response)) ; 1й способ
+      ((0) (qualifierAnswer userResponse)) ; 1й способ
       ((1) (hedge))  ; 2й способ
       ((2) (if flag2
-        (history-answer old-phrases) ; 3й способ
-        (keyword-answer user-response) ; 4й способ
+        (historyAnswer oldPhrases) ; 3й способ
+        (keywordAnswer userResponse) ; 4й способ
       )) 
-      ((3) (keyword-answer user-response)) ; 4й способ
+      ((3) (keywordAnswer userResponse)) ; 4й способ
     )
   )
 )
 
-(define strategies (
-  (predicate weight function)
+(define strategies '(
+  ; (predicate weight function)
   (
-    (lambda (assoc-param-list) #t) 
+    (lambda (assocParamList) #t) 
     1 
-    (lambda (assoc-param-list)
-      (let ((user-response (assoc 'user-response assoc-param-list)))
-        (qualifier-answer user-response)
+    (lambda (assocParamList)
+      (let ((userResponse (assoc 'userResponse assocParamList)))
+        (qualifierAnswer userResponse)
       )
     )
   )
   (
-    (lambda (assoc-param-list) #t) 
+    (lambda (assocParamList) #t) 
     2 
-    (lambda (assoc-param-list) (hedge))
+    (lambda (assocParamList) (hedge))
   )
   (
-    (lambda (assoc-param-list) (null? (assoc 'old-phrases assoc-param-list))) 
+    (lambda (assocParamList) (null? (assoc 'oldPhrases assocParamList))) 
     3 
-    (lambda (assoc-param-list)
-      (let ((old-phrases (assoc 'old-phrases assoc-param-list)))
-        (history-answer old-phrases)
+    (lambda (assocParamList)
+      (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
+        (historyAnswer oldPhrases)
       )
     )
   )
   (
-    (lambda (assoc-param-list) 
-      (let ((user-response (assoc 'user-response assoc-param-list)))
-        (has-keywords user-response)
+    (lambda (assocParamList) 
+      (let ((userResponse (assoc 'userResponse assocParamList)))
+        (hasKeywords userResponse)
       )
     ) 
     4 
-    (lambda (assoc-param-list)
-      (let ((old-phrases (assoc 'old-phrases assoc-param-list)))
-        (history-answer old-phrases)
+    (lambda (assocParamList)
+      (let ((oldPhrases (assoc 'oldPhrases assocParamList)))
+        (historyAnswer oldPhrases)
       )
     )
   )
 ))
 
 ; task 7
-(define (generalized-reply strategies assoc-params-lst)
+(define (generalizedReply strategies assocParamsLst)
   (let* 
     (
-      (filtered-strategies (filter-by-predicate strategies assoc-params-lst))
-      (weighted-list (map cdr filtered-strategies))
-      (function (pick-random-with-weight weighted-list))
+      (filteredStrategies (filterByPredicate strategies assocParamsLst))
+      (weightedList (map cdr filteredStrategies))
+      (function (pickRandomWithWeight weightedList))
     )
-    (function assoc-params-lst)
+    (function assocParamsLst)
   )
 )
 
-(define (filter-by-predicate strategies param-vector)
+(define (filterByPredicate strategies assocParamList)
   (filter  
     (lambda (strtg) 
       (let ((predicate (car strtg)))
       ; #t
-        (predicate param-vector)
+        (predicate assocParamList)
       )
     )
     strategies
@@ -135,49 +146,49 @@
 )
 
 
-(define (pick-random-with-weight lst)
+(define (pickRandomWithWeight lst)
   (let* 
     (
-      (max-random
+      (maxRandom
         (foldl 
           (lambda (x init) (+ init (car x)))
           0
           lst
         )
       )
-      (rand (random max-random))
+      (rand (random maxRandom))
     )
-    (find-by-weight-and-rand lst rand)
+    (findByWeightAndRand lst rand)
   )
 )
 
 
 ; lst: (weight function)
 
-(define (find-by-weight-and-rand lst rand)
+(define (findByWeightAndRand lst rand)
   (let* 
     (
       (this (car lst))
-      (this-weight (car this))
-      (this-function (cadr this))
+      (thisWeight (car this))
+      (thisFunction (cadr this))
     )
-    (if (< rand this-weight)
-      this-function
-      (find-by-weight-and-rand (cdr lst) (- rand this-weight))
+    (if (< rand thisWeight)
+      thisFunction
+      (findByWeightAndRand (cdr lst) (- rand thisWeight))
     )
   )
 )
 
 ; ====== tests ====== 
 (define (ttttest) 
-  (filter-by-predicate 
+  (filterByPredicate 
     (list
       (list ; пример стратегии
-        (lambda (param-vector) #t) ; предикат
+        (lambda (assocParamList) #t) ; предикат
         1 ; остальное
       )
       (list
-        (lambda (param-vector) #t)
+        (lambda (assocParamList) #t)
         2
       )
     )
@@ -217,7 +228,7 @@
 )
 
 (define (test) 
-  (pick-random-with-weight '(
+  (pickRandomWithWeight '(
     (1 1)
     (2 2)
     (3 3)
@@ -226,7 +237,7 @@
 )
 
 ; (define (test n) 
-;   (find-by-weight-and-rand 
+;   (findByWeightAndRand 
 ;     '(
 ;       (1 1)
 ;       (2 2)
@@ -240,21 +251,21 @@
 
 
 ; task 6
-(define (keyword-answer user-response)
+(define (keywordAnswer userResponse)
   (let* 
     (
-      (chosen-word (pick-random (find-keywords user-response)))
-      (chosen-template (pick-random (find-templates chosen-word)) )
-      (response (many-replace (list (list '* chosen-word)) chosen-template))
+      (chosenWord (pickRandom (findKeywords userResponse)))
+      (chosenTemplate (pickRandom (findTemplates chosenWord)) )
+      (response (manyReplace (list (list '* chosenWord)) chosenTemplate))
     )
     response
   )
 )
 			
-; 1й способ генерации ответной реплики -- замена лица в реплике пользователя и приписывание к результату нового начала
-(define (qualifier-answer user-response)
+; 1й способ генерации ответной реплики - замена лица в реплике пользователя и приписывание к результату нового начала
+(define (qualifierAnswer userResponse)
   (append 
-    (pick-random 
+    (pickRandom 
       '(
         (you seem to think that)
         (you feel that)
@@ -265,22 +276,22 @@
         (why do you feel that)
       )
     )
-    (change-person user-response)
+    (changePerson userResponse)
   )
 )
 
-(define (history-answer old-phrases) 
-  (append '(earlier you said that) (change-person (pick-random old-phrases)))
+(define (historyAnswer oldPhrases) 
+  (append '(earlier you said that) (changePerson (pickRandom oldPhrases)))
 )
 
 ; случайный выбор одного из элементов списка lst
-(define (pick-random lst)
+(define (pickRandom lst)
   (list-ref lst (random (length lst)))
 )
 
 ; замена лица во фразе			
-(define (change-person phrase)
-        (many-replace '((am are)
+(define (changePerson phrase)
+        (manyReplace '((am are)
                         (are am)
                         (i you)
                         (me you)
@@ -294,7 +305,7 @@
                       phrase)
 )
   
-(define word-groups '(
+(define wordGroups '(
   (
     (depressed suicide exams university)
     (
@@ -344,11 +355,11 @@
       (append (car wg) init)
     )
     '()
-    word-groups
+    wordGroups
   )
 )
 
-(define (find-templates word)
+(define (findTemplates word)
   (foldl 
     (lambda (wg init)
       (if (member word (car wg))
@@ -357,11 +368,11 @@
       )
     )
     '()
-    word-groups
+    wordGroups
   )
 )
 
-(define (find-keywords lst)
+(define (findKeywords lst)
   (filter 
     (lambda (word)
       (member word keywords)
@@ -370,27 +381,27 @@
   )
 )
 
-(define (has-keywords lst)
+(define (hasKeywords lst)
   (ormap 
     (lambda (word) (member word keywords))
     lst
   )
 )
 
-(define (many-replace replacement-pairs lst)
+(define (manyReplace replacementPairs lst)
   (map 
     (lambda (word)
-      (let ((pat-rep (assoc word replacement-pairs))) ; пара (ключ значение) или () ; Доктор ищет первый элемент списка в ассоциативном списке замен
-        (if pat-rep (cadr pat-rep) word)
+      (let ((patRep (assoc word replacementPairs))) ; пара (ключ значение) или () ; Доктор ищет первый элемент списка в ассоциативном списке замен
+        (if patRep (cadr patRep) word)
       )
     )
     lst
   )
 )
 
-; 2й способ генерации ответной реплики -- случайный выбор одной из заготовленных фраз, не связанных с репликой пользователя
+; 2й способ генерации ответной реплики - случайный выбор одной из заготовленных фраз, не связанных с репликой пользователя
 (define (hedge)
-  (pick-random 
+  (pickRandom 
     '(
       (please go on)
       (many people have the same sorts of feelings)
