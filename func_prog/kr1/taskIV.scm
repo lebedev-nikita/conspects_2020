@@ -11,9 +11,22 @@
 
 (define (taskIV t s cc)
   (if (not (tree? t))
-    (* s t)
+    (cc (* s t))
+    (cc 
+      (+
+        (taskIV (tree-topleft t) (/ s 4))
+        (taskIV (tree-topright t) (/ s 4))
+        (taskIV (tree-botleft t) (/ s 4))
+        (taskIV (tree-botright t) (/ s 4))
+      )
+    )
+  )
+)
+
+(lambda (w) 
+  (cc 
     (+
-      (taskIV (tree-topleft t) (/ s 4))
+      w
       (taskIV (tree-topright t) (/ s 4))
       (taskIV (tree-botleft t) (/ s 4))
       (taskIV (tree-botright t) (/ s 4))
@@ -21,6 +34,27 @@
   )
 )
 
+(lambda (x) 
+  (cc 
+    (+ w x
+      (taskIV (tree-botleft t) (/ s 4))
+      (taskIV (tree-botright t) (/ s 4))
+    )
+  )
+)
+
+(lambda (y) 
+  (cc 
+    (+ w x y
+      (taskIV (tree-botright t) (/ s 4))
+    )
+  )
+)
+(lambda (z) 
+  (cc 
+    (+ w x y z)
+  )
+)
 
 (taskIV 
   #(1 0 0 #(1 1 1 0)) 
