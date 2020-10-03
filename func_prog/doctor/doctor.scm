@@ -40,9 +40,10 @@
       )
       (else 
         (print 
+          ; task 7
           (reply strategies (list
-              (list 'userResponse userResponse) 
-              (list 'oldPhrases oldPhrases)
+            (list 'userResponse userResponse) 
+            (list 'oldPhrases oldPhrases)
           ))
         ) ; иначе Доктор генерирует ответ, печатает его и продолжает цикл
         (doctorDriverLoop name (cons userResponse oldPhrases))
@@ -99,7 +100,6 @@
     (filter  
       (lambda (strtg) 
         (let ((predicate (car strtg)))
-        ; #t
           (predicate assocParamList)
         )
       )
