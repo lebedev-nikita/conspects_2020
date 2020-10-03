@@ -4,95 +4,37 @@
 (define make-tree vector)
 (define tree? vector?)
 
-(define (tree-topleft tree) (vector-ref tree 0))
-(define (tree-topright tree) (vector-ref tree 1))
-(define (tree-botleft tree) (vector-ref tree 2))
-(define (tree-botright tree) (vector-ref tree 3))
+(define (tree1 tree) (vector-ref tree 0))
+(define (tree2 tree) (vector-ref tree 1))
+(define (tree3 tree) (vector-ref tree 2))
+(define (tree4 tree) (vector-ref tree 3))
 
 (define (taskIV t s cc)
   (if (not (tree? t))
     (cc (* s t))
-    (cc 
-      (+
-        (taskIV (tree-topleft t) (/ s 4))
-        (taskIV (tree-topright t) (/ s 4))
-        (taskIV (tree-botleft t) (/ s 4))
-        (taskIV (tree-botright t) (/ s 4))
-      )
+    (taskIV 
+      (tree1 t) 
+      (/ s 4)
+      (lambda (w) 
+        (taskIV 
+          (tree2 t) 
+          (/ s 4)
+          (lambda (x) 
+            (taskIV 
+              (tree3 t) 
+              (/ s 4)
+              (lambda (y) 
+                (taskIV 
+                  (tree4 t) 
+                    (/ s 4)
+                    (lambda (z) 
+                      (cc (+ w x y z)))))))))
     )
-  )
-)
-
-(lambda (w) 
-  (cc 
-    (+
-      w
-      (taskIV (tree-topright t) (/ s 4))
-      (taskIV (tree-botleft t) (/ s 4))
-      (taskIV (tree-botright t) (/ s 4))
-    )
-  )
-)
-
-(lambda (x) 
-  (cc 
-    (+ w x
-      (taskIV (tree-botleft t) (/ s 4))
-      (taskIV (tree-botright t) (/ s 4))
-    )
-  )
-)
-
-(lambda (y) 
-  (cc 
-    (+ w x y
-      (taskIV (tree-botright t) (/ s 4))
-    )
-  )
-)
-(lambda (z) 
-  (cc 
-    (+ w x y z)
   )
 )
 
 (taskIV 
   #(1 0 0 #(1 1 1 0)) 
-  16
-  (lambda (x s) (* s x))
+  16 
+  (lambda(x) x) 
 )
-
-
-; (lambda (w) 
-;   (cc (+ w
-;     (taskIV (tree-topright t) (/ s 4))
-;     (taskIV (tree-botleft t) (/ s 4))
-;     (taskIV (tree-botright t) (/ s 4))
-;   ))
-; )
-; (lambda (x) 
-;   (cc (+ w x
-;     (taskIV (tree-botleft t) (/ s 4))
-;     (taskIV (tree-botright t) (/ s 4))
-;   ))
-; )
-; (lambda (y) 
-;   (cc (+ w x y
-;     (taskIV (tree-botright t) (/ s 4))
-;   ))
-; )
-; (lambda (z) 
-;   (cc (+ w x y z)) 
-; )
-
-; (define (taskIV t s cc)
-;   (if (not (tree? t))
-;     (* s t)
-;     (+
-;       (taskIV (tree-topleft t) (/ s 4))
-;       (taskIV (tree-topright t) (/ s 4))
-;       (taskIV (tree-botleft t) (/ s 4))
-;       (taskIV (tree-botright t) (/ s 4))
-;     )
-;   )
-; )
