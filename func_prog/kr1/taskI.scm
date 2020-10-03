@@ -24,7 +24,7 @@
             )
           )
         )
-        ; ((min prevNum) (resList))
+        ; ((min prevNum) ...resList))
         (list (list (car lst) 0) 0)
         (cdr lst)
       )
