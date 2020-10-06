@@ -1,19 +1,21 @@
 #lang scheme/base
 
 (define (taskV . args)
-  (define (superpos funcList)
+  (define (superpos funcList cc)
     (let 
       (
         (thisFunc (car funcList))
         (otherFuncs (cdr funcList))
       )
       (if (null? otherFuncs)
-        thisFunc
-        (lambda (x) ((superpos otherFuncs) (thisFunc x)))
+        (cc thisFunc)
+        ; (cc (lambda (x) ((superpos otherFuncs) (thisFunc x))))
+        ; (lambda (y) (cc (lambda (x) (y (thisFunc x)))))
+        (superpos otherFuncs (lambda (y) (cc (lambda (x) (y (thisFunc x))))))
       )
     )
   )
-  (superpos args)
+  (superpos args (lambda (x) x))
 )
 
 (define f 

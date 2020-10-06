@@ -1,0 +1,63 @@
+#lang scheme/base
+
+(define (simple? n)
+  (define (simpleInner? n i stopI)
+    (if (> i stopI)
+      #t
+      (if (= 0 (modulo n i))
+        #f
+        (simpleInner? n (+ 1 i) stopI)
+      )
+    )
+  )
+  (simpleInner? n 2 (sqrt n))
+)
+
+(define (fun2a n)
+  (define (fun2bInner n i)
+    (if (> i n)
+      '()
+      (if (simple? i)
+        (fun2bInner n (+ 1 i))
+        (if (= 0 (modulo n i))
+          (cons i (fun2bInner n (+ 1 i)))
+          ; (fun2bInner n (+ 1 i) (cons i lst))
+          (fun2bInner n (+ 1 i))
+        )
+      )
+    ) 
+  )
+  (fun2bInner n 2)
+)
+
+(define (fun2b n)
+  (define (fun2bInner n i lst)
+    (if (> i n)
+      lst
+      (if (simple? i)
+        (fun2bInner n (+ 1 i) lst)
+        (if (= 0 (modulo n i))
+          (fun2bInner n (+ 1 i) (cons i lst))
+          (fun2bInner n (+ 1 i) lst)
+        )
+      )
+    ) 
+  )
+  (reverse (fun2bInner n 2 '()))
+)
+
+(fun2a 10)
+(fun2a 11)
+(fun2a 12)
+(fun2a 1)
+(fun2a 2)
+(println 'a)
+(fun2b 10)
+(fun2b 11)
+(fun2b 12)
+(fun2b 1)
+(fun2b 2)
+
+
+
+; (getSimpleDivs 10 2 null)
