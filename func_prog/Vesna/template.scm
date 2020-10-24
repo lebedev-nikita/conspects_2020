@@ -19,7 +19,10 @@
       strLst
     )
   )
-  (removeEmptyStr (splitBySpaces (addSpaces str)))
+  (define (mapStringToSymbol strArr) (map string->symbol strArr))
+
+  (mapStringToSymbol (removeEmptyStr (splitBySpaces (addSpaces str))))
 )
+
 
 (parseStr "Hello world! I am there! And I am the king!!!  ")
