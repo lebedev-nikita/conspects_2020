@@ -1,19 +1,24 @@
 #lang scheme/base
 
-(require scheme/mpair)
-(require math/number-theory)
-(require racket/hash)
 (require racket/string) ;+
+(require racket/port)
+
+
+(require scheme/mpair)
+(require racket/hash)
 
 ; (read-line)
 ;[.,:;()!?-] символы пунктуации
 
-(define (string->symbolList str)
+(define (parseString str)
   (define (removeBadChars str)
-    (regexp-replace* #rx"([&\\^\\*\\+\\=\\_\\|\\/\\%\\$\\#\\№\\@\\>\\<\\`\\~\\{\\}]|[[]|[]])" str "")
+    (regexp-replace* #rx"([&\\^\\*\\+\\=\\_\\|\\/\\%\\$\\#\\№\\@\\>\\<\\`\\~\\{\\}]|[[]|[]]|\n)" 
+      (regexp-replace* #rx"(\n)" str ". ")
+      " "
+    )
   )
   (define (addSpaces str)
-    (regexp-replace* #rx"([.,:;()!?-])" str " \\1 ")
+    (regexp-replace* #rx"([.,:;«»()!?-])" str " \\1 ")
   )
   (define (splitBySpaces str)
     (regexp-split #rx" +" str)
@@ -26,25 +31,36 @@
   )
   (define (mapStringToSymbol strList) (map string->symbol strList))
 
-  (mapStringToSymbol (removeEmptyStr (splitBySpaces (addSpaces (removeBadChars str)))))
+  (mapStringToSymbol (removeEmptyStr (splitBySpaces (addSpaces (removeBadChars (string-downcase str))))))
 )
 
-(define (symbolList->string symbolList)
+(define (prepareForPrint symbolList)
   (define (mapSymbolToString symbolList) (map symbol->string symbolList))
   (define (removeOddSpaces str)
-    (regexp-replace* #rx" +([.,:;)!?-])" str "\\1") ; убрал открывающую скобку
+    (regexp-replace* #rx" +([.,:;»)!?-])" str "\\1") ; убрал открывающую скобку
   )
   
   (removeOddSpaces(string-join (mapSymbolToString symbolList)))
 )
 
-(define str1 "fdk()ldksl")
-(define str2 "Hello world! I am there! And [&&] I am the king!!!  ")
+(define (readFile path)
+  (let* 
+    (
+      (inputPort (open-input-file path))
+      (data (port->string inputPort))
+    )
+    (close-input-port inputPort)
+    data
+  )
+)
 
-(string->symbolList str1)
-(symbolList->string (string->symbolList str1))
-(string->symbolList str2)
-(symbolList->string (string->symbolList str2))
 
-; (string->symbolList (read-line))
-; (println (list 'a 'b 'c 'd))
+; (define str1 "fdk()ldksl")
+; (define str2 "Hello world! I am there! And [&&] I am the king!!!  ")
+
+; (parseString str1)
+; (prepareForPrint (parseString str1))
+; (parseString str2)
+; (prepareForPrint (parseString str2))
+
+(parseString (readFile "./Destrukt.txt"))
