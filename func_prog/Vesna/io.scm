@@ -1,11 +1,10 @@
 #lang scheme/base
 
 (require racket/string) ;+
-(require racket/port)
+(require racket/port) ;+
 
-
-(require scheme/mpair)
-(require racket/hash)
+(require scheme/mpair) 
+(require racket/hash) ;+
 
 ; (read-line)
 ;[.,:;()!?-] символы пунктуации
@@ -54,13 +53,61 @@
   )
 )
 
+; (hash-ref <hash> <key> <failval>)
+; (hash-set! <hash> <key> <val>) 
+; val: (prevs . nexts)
 
-; (define str1 "fdk()ldksl")
-; (define str2 "Hello world! I am there! And [&&] I am the king!!!  ")
+(define mainHashTable (make-hash))
 
-; (parseString str1)
-; (prepareForPrint (parseString str1))
-; (parseString str2)
-; (prepareForPrint (parseString str2))
+(define (addSymbolToMainHashTable symbol)
+  (let 
+    (
+      (prevs.nexts (hash-ref mainHashTable symbol #f))
+    )
+    (if prevs.nexts
+      prevs.nexts
+      (let ((prevs.nexts (cons (make-hash) (make-hash))))
+        (hash-set! mainHashTable symbol prevs.nexts)
+        prevs.nexts
+      )
+    )
+  )
+)
 
-(parseString (readFile "./Destrukt.txt"))
+(define (addPrev symbol prev)
+  (let* 
+    (
+      (prevs (car (addSymbolToMainHashTable symbol)))
+      (count (hash-ref prevs prev 0))
+    )
+    (hash-set! prevs prev (+ 1 count))
+  )
+)
+
+(define (addNext symbol next)
+  (let* 
+    (
+      (nexts (cdr (addSymbolToMainHashTable symbol)))
+      (count (hash-ref nexts next 0))
+    )
+    (hash-set! nexts next (+ 1 count))
+  )
+)
+
+(define (learn symbolList prev)
+  (if (null? symbolList)
+    "finished"
+    ; mainHashTable
+    (let ((cur (car symbolList)))
+      (addNext prev cur)
+      (addPrev cur prev)
+      (learn (cdr symbolList) cur)
+    )
+  )
+)
+
+
+; (parseString (readFile "./freud.txt"))
+(learn (parseString (readFile "./freud.txt")) '|.|)
+
+; (cdr (hash-ref mainHashTable 'found 0))
