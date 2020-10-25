@@ -96,8 +96,7 @@
 
 (define (learn symbolList prev)
   (if (null? symbolList)
-    "finished"
-    ; mainHashTable
+    "learn finished"
     (let ((cur (car symbolList)))
       (addNext prev cur)
       (addPrev cur prev)
@@ -106,8 +105,20 @@
   )
 )
 
+(define (reWriteFile data path)
+  (let* 
+    (
+      (outputPort (open-output-file path #:exists 'replace))
+    )
+    (print data outputPort)
+    (close-output-port outputPort)
+    "writeFile finished"
+  )
+)
+
 
 ; (parseString (readFile "./freud.txt"))
-(learn (parseString (readFile "./freud.txt")) '|.|)
+(learn (parseString (readFile "freud.txt")) '|.|)
+(reWriteFile mainHashTable "output.txt")
 
-; (cdr (hash-ref mainHashTable 'found 0))
+; (cdr (hash-ref mainHashTable 'found 0)) ; выводим nexts
