@@ -42,11 +42,22 @@
   (removeOddSpaces(string-join (mapSymbolToString symbolList)))
 )
 
-(define (readFile path)
+(define (readFileAsString path)
   (let* 
     (
       (inputPort (open-input-file path))
       (data (port->string inputPort))
+    )
+    (close-input-port inputPort)
+    data
+  )
+)
+
+(define (readFileAsSyntax path)
+  (let* 
+    (
+      (inputPort (open-input-file path))
+      (data (read inputPort))
     )
     (close-input-port inputPort)
     data
@@ -117,8 +128,11 @@
 )
 
 
-; (parseString (readFile "./freud.txt"))
-(learn (parseString (readFile "freud.txt")) '|.|)
+
+
+; (parseString (readFileAsString "./freud.txt"))
+(learn (parseString (readFileAsString "freud.txt")) '|.|)
 (reWriteFile mainHashTable "output.txt")
+(define n (readFileAsSyntax "output.txt"))
 
 ; (cdr (hash-ref mainHashTable 'found 0)) ; выводим nexts
