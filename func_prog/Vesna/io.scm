@@ -68,50 +68,48 @@
 ; (hash-set! <hash> <key> <val>) 
 ; val: (prevs . nexts)
 
-(define mainHashTable (make-hash))
-
-(define (addSymbolToMainHashTable symbol)
+(define (addSymbolToHashTable hashTable symbol)
   (let 
     (
-      (prevs.nexts (hash-ref mainHashTable symbol #f))
+      (prevs.nexts (hash-ref hashTable symbol #f))
     )
     (if prevs.nexts
       prevs.nexts
       (let ((prevs.nexts (cons (make-hash) (make-hash))))
-        (hash-set! mainHashTable symbol prevs.nexts)
+        (hash-set! hashTable symbol prevs.nexts)
         prevs.nexts
       )
     )
   )
 )
 
-(define (addPrev symbol prev)
+(define (addPrev hashTable symbol prev)
   (let* 
     (
-      (prevs (car (addSymbolToMainHashTable symbol)))
+      (prevs (car (addSymbolToHashTable hashTable symbol)))
       (count (hash-ref prevs prev 0))
     )
     (hash-set! prevs prev (+ 1 count))
   )
 )
 
-(define (addNext symbol next)
+(define (addNext hashTable symbol next)
   (let* 
     (
-      (nexts (cdr (addSymbolToMainHashTable symbol)))
+      (nexts (cdr (addSymbolToHashTable hashTable symbol)))
       (count (hash-ref nexts next 0))
     )
     (hash-set! nexts next (+ 1 count))
   )
 )
 
-(define (learn symbolList prev)
+(define (learn hashTable symbolList prev)
   (if (null? symbolList)
     "learn finished"
     (let ((cur (car symbolList)))
-      (addNext prev cur)
-      (addPrev cur prev)
-      (learn (cdr symbolList) cur)
+      (addNext hashTable prev cur)
+      (addPrev hashTable cur prev)
+      (learn hashTable (cdr symbolList) cur)
     )
   )
 )
@@ -127,12 +125,23 @@
   )
 )
 
+(define (mergeHashTables ht1 ht2)
+  ; ht1 <- ht1 + ht2
+  ; TODO
+  ; (hash-keys h1)
+  ; (hash-keys h2)
+  "merge finished"
+)
 
 
+
+(define myHashTable (make-hash))
 
 ; (parseString (readFileAsString "./freud.txt"))
-(learn (parseString (readFileAsString "freud.txt")) '|.|)
-(reWriteFile mainHashTable "output.txt")
+(learn myHashTable (parseString (readFileAsString "freud.txt")) '|.|)
+(reWriteFile myHashTable "output.txt")
 (define n (readFileAsSyntax "output.txt"))
 
-; (cdr (hash-ref mainHashTable 'found 0)) ; выводим nexts
+
+
+; (cdr (hash-ref myHashTable 'found 0)) ; выводим nexts
