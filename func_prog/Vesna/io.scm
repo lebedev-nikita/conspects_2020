@@ -53,7 +53,7 @@
   )
 )
 
-(define (readFileAsSyntax path)
+(define (readFileAsObject path)
   (let* 
     (
       (inputPort (open-input-file path))
@@ -68,7 +68,7 @@
 ; (hash-set! <hash> <key> <val>) 
 ; val: (prevs . nexts)
 
-(define (addSymbolToHashTable hashTable symbol)
+(define (addKeyToHashTable hashTable symbol)
   (let 
     (
       (prevs.nexts (hash-ref hashTable symbol #f))
@@ -83,23 +83,43 @@
   )
 )
 
-(define (addPrev hashTable symbol prev)
+(define (addPrev hashTable symbol prev increment)
   (let* 
     (
-      (prevs (car (addSymbolToHashTable hashTable symbol)))
+      (prevs (car (addKeyToHashTable hashTable symbol)))
       (count (hash-ref prevs prev 0))
     )
-    (hash-set! prevs prev (+ 1 count))
+    (hash-set! prevs prev (+ increment count))
   )
 )
 
-(define (addNext hashTable symbol next)
+(define (addNext hashTable symbol next increment)
   (let* 
     (
-      (nexts (cdr (addSymbolToHashTable hashTable symbol)))
+      (nexts (cdr (addKeyToHashTable hashTable symbol)))
       (count (hash-ref nexts next 0))
     )
-    (hash-set! nexts next (+ 1 count))
+    (hash-set! nexts next (+ increment count))
+  )
+)
+
+(define (getNextCount hashTable symbol next) ; ломается при отсутствующем symbol
+  (let* 
+    (
+      (nexts (cdr (hash-ref hashTable symbol 'noghing))) 
+      (count (hash-ref nexts next 0))
+    )
+    count
+  )
+)
+
+(define (getPrevCount hashTable symbol prev) ; ломается при отсутствующем symbol
+  (let* 
+    (
+      (prevs (car (hash-ref hashTable symbol 'noghing))) 
+      (count (hash-ref prevs prev 0))
+    )
+    count
   )
 )
 
@@ -107,8 +127,8 @@
   (if (null? symbolList)
     "learn finished"
     (let ((cur (car symbolList)))
-      (addNext hashTable prev cur)
-      (addPrev hashTable cur prev)
+      (addNext hashTable prev cur 1)
+      (addPrev hashTable cur prev 1)
       (learn hashTable (cdr symbolList) cur)
     )
   )
@@ -126,11 +146,36 @@
 )
 
 (define (mergeHashTables ht1 ht2)
-  ; ht1 <- ht1 + ht2
-  ; TODO
-  ; (hash-keys h1)
-  ; (hash-keys h2)
-  "merge finished"
+  (define (mergeKey key)
+    (let*
+      (
+        (ht2pKeys (hash-keys (car (hash-ref ht2 key 'nothing))))
+        (ht2nKeys (hash-keys (cdr (hash-ref ht2 key 'nothing))))
+      )
+      (for-each
+        (lambda (ht2pKey) 
+          (addPrev ht1 key ht2pKey (getPrevCount ht2 key ht2pKey))
+        )
+        ht2pKeys
+      )
+      (for-each
+        (lambda (ht2nKey) 
+          (addNext ht1 key ht2nKey (getNextCount ht2 key ht2nKey))
+        )
+        ht2nKeys
+      )
+    )
+  )
+  (let 
+    (
+      (ht2Keys (hash-keys ht2))
+    )
+    (for-each
+      mergeKey
+      ht2Keys
+    )
+    "mergeHashTables finished"
+  )
 )
 
 
@@ -140,8 +185,15 @@
 ; (parseString (readFileAsString "./freud.txt"))
 (learn myHashTable (parseString (readFileAsString "freud.txt")) '|.|)
 (reWriteFile myHashTable "output.txt")
-(define n (readFileAsSyntax "output.txt"))
+(define n (readFileAsObject "output.txt"))
 
+; (mergeHashTables n myHashTable)
+(mergeHashTables myHashTable n) 
+; NOTE: не работает с обратным порядком параметров. Скорее всего, при записи и чтении 
+; теряется мутабельность хэша.
 
+(getNextCount n 'found 'in)
+(getNextCount myHashTable 'found 'in)
 
 ; (cdr (hash-ref myHashTable 'found 0)) ; выводим nexts
+
