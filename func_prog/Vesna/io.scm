@@ -5,14 +5,15 @@
 
 (require scheme/mpair) 
 (require racket/hash) ;+
+(require racket/list) ;+
 
 ; (read-line)
 ;[.,:;()!?-] символы пунктуации
 
 (define (parseString str)
   (define (removeBadChars str)
-    (regexp-replace* #rx"([&\\^\\*\\+\\=\\_\\|\\/\\%\\$\\#\\№\\@\\>\\<\\`\\~\\{\\}]|[[]|[]]|\n)" 
-      (regexp-replace* #rx"(\n)" str ". ")
+    (regexp-replace* #rx"([&\\^\\*\\+\\=\\_\\|\\/\\%\\$\\#\\№\\@\\>\\<\\`\\~\\{\\}\"]|[[]|[]]|\n)" 
+      (regexp-replace* #rx"(\n)" str " ")
       " "
     )
   )
@@ -64,6 +65,7 @@
   )
 )
 
+
 ; (hash-ref <hash> <key> <failval>)
 ; (hash-set! <hash> <key> <val>) 
 ; val: (prevs . nexts)
@@ -103,29 +105,143 @@
   )
 )
 
-(define (learn hashTable symbolList prev)
-  (if (null? symbolList)
-    "learn finished"
-    (let ((cur (car symbolList)))
-      (addNext hashTable prev cur 1)
-      (addPrev hashTable cur prev 1)
-      (learn hashTable (cdr symbolList) cur)
-    )
+(define (isEnd symbol)
+  (or
+    (equal? symbol '|.|)
+    (equal? symbol '|?|)
+    (equal? symbol '|!|)
   )
 )
 
-(define (reWriteFile data path)
-  (let* 
+(define (incCount hashTable key increment)
+  (let*
     (
-      (outputPort (open-output-file path #:exists 'replace))
+      (count (hash-ref hashTable key 0))
+      (newCount (+ increment count))
     )
-    (print data outputPort)
-    (close-output-port outputPort)
-    "writeFile finished"
+    (hash-set! hashTable key newCount)
+    newCount
   )
 )
 
-(define (mergeHashTables ht1 ht2)
+
+(define (createNgramGenereator N symbolList)
+  (define n-1 (- N 1))
+
+  (define (pop)
+    (if (null? symbolList)
+      #f
+      (let ((elem (car symbolList)))
+        (set! symbolList (cdr symbolList))
+        elem
+      )
+    )
+  )
+
+  (define prev '|.|)
+  (define cur '())
+  (define last "empty")
+  (define next (pop))
+
+  (define (shift)
+    (set! prev (car cur))
+    (set! cur (append (cdr cur) (list next)))
+    (set! last next)
+    (set! next (pop))
+  )
+
+  (define (fill)
+    (set! cur (append cur (list next)))
+    (set! last next)
+    (set! next (pop))
+  )
+
+  (define (firstFill)
+    (if (= n-1 (length cur))
+      "firstFill finished";
+      (begin
+        (fill)
+        (firstFill)
+      )
+    )
+  )
+  (firstFill)
+
+  (define (endInside lst) 
+    (ormap isEnd lst)
+  )
+
+  (define (getNgram)
+    (let ((res (list prev cur next)))
+      (if (not next)
+        res
+        (if (endInside cur)
+          (begin 
+            (shift)
+            (getNgram)
+          )
+          (begin
+            (shift)
+            res
+          )
+        )
+      )
+    )
+  )
+  getNgram
+  ; (prev (cur: n-1) next)
+)
+
+(define (learn firsts followings N symbolList)
+  (define generate (createNgramGenereator N symbolList))
+  (define (recFun)
+    (let*
+      (
+        (prevCurNext (generate))
+        (prev (car prevCurNext))
+        (cur (cadr prevCurNext))
+        (next (caddr prevCurNext))
+      )
+      (if (not next)
+        "learn finished"
+        (begin
+          (if (isEnd prev)
+            (incCount firsts cur 1)
+            "nothing"
+          )
+          (addNext followings cur next 1)
+          (addPrev followings cur prev 1)
+          (recFun)
+        )
+      )
+    )
+  )
+  (recFun)
+)
+
+(define (pickRandomKeyFromHT hashTable)
+  (define sum 0)
+  (hash-for-each hashTable (lambda (key count) (set! sum (+ count sum))))
+  (define rand (random sum))
+  (define result "empty")
+  (hash-for-each hashTable 
+    (lambda (key count) 
+      (if (not (equal? result "empty"))
+        "nothing"
+        (begin 
+          (set! rand (- rand count))
+          (if (<= rand 0)
+            (set! result key)
+            "nothing"
+          )
+        )
+      )
+    )
+  )
+  result
+)
+
+(define (mergeHashTables ht1 ht2) ; TODO
   (hash-for-each ht2
     (lambda (symbol prevs.nexts)
       (hash-for-each (car prevs.nexts)
@@ -144,20 +260,18 @@
 )
 
 
-(define myHashTable (make-hash))
+(define firsts (make-hash))
+(define followings (make-hash))
+(learn firsts followings 2 (parseString (readFileAsString "freud.txt")))
+
+; (hash-ref followings '(found) 0)
+firsts
 
 ; (parseString (readFileAsString "./freud.txt"))
-(learn myHashTable (parseString (readFileAsString "freud.txt")) '|.|)
-(reWriteFile myHashTable "output.txt")
-(define n (readFileAsObject "output.txt"))
+; (reWriteFile myHashTable "output.txt")
+; (define n (readFileAsObject "output.txt"))
 
 ; (mergeHashTables n myHashTable)
-(mergeHashTables myHashTable n) 
+; (mergeHashTables myHashTable n) 
 ; NOTE: не работает с обратным порядком параметров. Скорее всего, при записи и чтении 
 ; теряется мутабельность хэша.
-
-(hash-ref (cdr (hash-ref n 'found)) 'in)
-(hash-ref (cdr (hash-ref myHashTable 'found)) 'in)
-
-; (cdr (hash-ref myHashTable 'found 0)) ; выводим nexts
-
