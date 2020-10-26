@@ -103,26 +103,6 @@
   )
 )
 
-(define (getNextCount hashTable symbol next) ; ломается при отсутствующем symbol
-  (let* 
-    (
-      (nexts (cdr (hash-ref hashTable symbol 'noghing))) 
-      (count (hash-ref nexts next 0))
-    )
-    count
-  )
-)
-
-(define (getPrevCount hashTable symbol prev) ; ломается при отсутствующем symbol
-  (let* 
-    (
-      (prevs (car (hash-ref hashTable symbol 'noghing))) 
-      (count (hash-ref prevs prev 0))
-    )
-    count
-  )
-)
-
 (define (learn hashTable symbolList prev)
   (if (null? symbolList)
     "learn finished"
@@ -146,38 +126,22 @@
 )
 
 (define (mergeHashTables ht1 ht2)
-  (define (mergeKey key)
-    (let*
-      (
-        (ht2pKeys (hash-keys (car (hash-ref ht2 key 'nothing))))
-        (ht2nKeys (hash-keys (cdr (hash-ref ht2 key 'nothing))))
-      )
-      (for-each
-        (lambda (ht2pKey) 
-          (addPrev ht1 key ht2pKey (getPrevCount ht2 key ht2pKey))
+  (hash-for-each ht2
+    (lambda (symbol prevs.nexts)
+      (hash-for-each (car prevs.nexts)
+        (lambda (prev count) 
+          (addPrev ht1 symbol prev count)
         )
-        ht2pKeys
       )
-      (for-each
-        (lambda (ht2nKey) 
-          (addNext ht1 key ht2nKey (getNextCount ht2 key ht2nKey))
+      (hash-for-each (cdr prevs.nexts)
+        (lambda (next count) 
+          (addNext ht1 symbol next count)
         )
-        ht2nKeys
       )
     )
   )
-  (let 
-    (
-      (ht2Keys (hash-keys ht2))
-    )
-    (for-each
-      mergeKey
-      ht2Keys
-    )
-    "mergeHashTables finished"
-  )
+  "mergeHashTables finished"
 )
-
 
 
 (define myHashTable (make-hash))
@@ -192,8 +156,8 @@
 ; NOTE: не работает с обратным порядком параметров. Скорее всего, при записи и чтении 
 ; теряется мутабельность хэша.
 
-(getNextCount n 'found 'in)
-(getNextCount myHashTable 'found 'in)
+(hash-ref (cdr (hash-ref n 'found)) 'in)
+(hash-ref (cdr (hash-ref myHashTable 'found)) 'in)
 
 ; (cdr (hash-ref myHashTable 'found 0)) ; выводим nexts
 
