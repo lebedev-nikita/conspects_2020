@@ -1,10 +1,9 @@
 #lang scheme/base
 
-(require racket/string) ;+
-(require racket/port) ;+
-; (require scheme/mpair) 
-(require racket/hash) ;+
-(require racket/list) ;+
+(require racket/string)
+(require racket/port)
+(require racket/hash)
+(require racket/list)
 
 ; параметр num - сколько еще пациентов доктор может принять
 (define (visit-doctor stopWord num starts.order)
@@ -23,7 +22,7 @@
         '(working day finished)
         (begin
           (printf "hello, ~a!\n" name)
-          (printf "what seems to be the trouble?\n")
+          (printf "what seems to be the trouble?")
           (doctorDriverLoop name '() starts.order)
           (visit-doctor stopWord (- num 1) starts.order)
         )
@@ -59,7 +58,6 @@
   )
 )
 
-; task 7
 (define strategies (list
   ; (predicate weight function)
   (list 
@@ -106,24 +104,13 @@
         (
           (starts.order (cadr (assoc '|starts.order| assocParamList)))
           (userResponse (cadr (assoc 'userResponse assocParamList)))
-          (order (cdr starts.order))
-          (n-1 (length (car (hash-keys order))))
-          ; (mixedBase (findf (lambda ) userResponse))
         )
-        ; (if (ormap)
-        ;   (generateAnswer starts.order 'mixed)
-        ;   (generateAnswer starts.order 'forward)
-        ; )
-
-        (generateAnswer starts.order)
+        (generateAnswer starts.order userResponse)
       )
     )
   )
 ))
 
-
-
-; task 7
 ; генерация ответной реплики по userResponse - реплике от пользователя 
 (define (reply strategies assocParamsLst)
   (define (filterByPredicate strategies assocParamList)
@@ -340,7 +327,7 @@
   )
 )
 
-;=============== learn ===============;
+;=============== input/output ===============;
 
 
 ; (read-line)
@@ -373,7 +360,9 @@
 (define (prepareForPrint symbolList)
   (define (mapSymbolToString symbolList) (map symbol->string symbolList))
   (define (removeOddSpaces str)
-    (regexp-replace* #rx" +([.,:;»)!?-])" str "\\1") ; убрал открывающую скобку
+    (regexp-replace* #rx" *- *" 
+      (regexp-replace* #rx" +([.,:;»)!?-])" str "\\1") ; убрал открывающую скобку
+    "-")
   )
   
   (removeOddSpaces(string-join (mapSymbolToString symbolList)))
@@ -418,27 +407,6 @@
 ; (hash-set! <hash> <key> <val>) 
 ; val: (prevs . nexts)
 
-
-(define (addPrev hashTable symbol prev increment)
-  (let* 
-    (
-      (prevs (car (addKeyToHashTable hashTable symbol (cons (make-hash) (make-hash)))))
-      (count (hash-ref prevs prev 0))
-    )
-    (hash-set! prevs prev (+ increment count))
-  )
-)
-
-(define (addNext hashTable symbol next increment)
-  (let* 
-    (
-      (nexts (cdr (addKeyToHashTable hashTable symbol (cons (make-hash) (make-hash)))))
-      (count (hash-ref nexts next 0))
-    )
-    (hash-set! nexts next (+ increment count))
-  )
-)
-
 (define (isEnd? symbol)
   (or
     (equal? symbol '|.|)
@@ -447,72 +415,8 @@
   )
 )
 
-(define (createNgramGenereator N symbolList)
-  (define n-1 (- N 1))
+;=============== learning ===============;
 
-  (define (pop)
-    (if (null? symbolList)
-      #f
-      (let ((elem (car symbolList)))
-        (set! symbolList (cdr symbolList))
-        elem
-      )
-    )
-  )
-
-  (define prev '|.|)
-  (define cur '())
-  (define last "empty")
-  (define next (pop))
-
-  (define (shift)
-    (set! prev (car cur))
-    (set! cur (append (cdr cur) (list next)))
-    (set! last next)
-    (set! next (pop))
-  )
-
-  (define (fill)
-    (set! cur (append cur (list next)))
-    (set! last next)
-    (set! next (pop))
-  )
-
-  (define (firstFill)
-    (if (= n-1 (length cur))
-      "firstFill finished";
-      (begin
-        (fill)
-        (firstFill)
-      )
-    )
-  )
-  (firstFill)
-
-  (define (endInside lst) 
-    (ormap isEnd? lst)
-  )
-
-  (define (getNgram)
-    (let ((res (list prev cur next)))
-      (if (not next)
-        res
-        (if (endInside cur)
-          (begin 
-            (shift)
-            (getNgram)
-          )
-          (begin
-            (shift)
-            res
-          )
-        )
-      )
-    )
-  )
-  getNgram
-  ; (prev (cur: n-1) next)
-)
 
 (define (slidingWindow lst windowLength params fun)
   (if (< (length lst) windowLength)
@@ -556,65 +460,41 @@
 )
 
 (define (learn starts.order N symbolList)
-  (let 
-    ( 
-      (starts (car starts.order))
-      (order (cdr starts.order))
-      ; (generate (createNgramGenereator N symbolList))
-    )
-    (slidingWindow (cons '|.| symbolList) (+ N 1) starts.order 
-      (lambda (n+1gram starts.order)
-        (let*
-          (
-            (starts (car starts.order))
-            (order (cdr starts.order))
+  (slidingWindow (cons '|.| symbolList) (+ N 1) starts.order 
+    (lambda (n+1gram starts.order)
+      (let*
+        (
+          (starts (car starts.order))
+          (order (cdr starts.order))
 
-            (prev (car n+1gram))
-            (next (last n+1gram))
-            (n-1gram (drop-right (cdr n+1gram) 1))
+          (prev (car n+1gram))
+          (next (last n+1gram))
+          (n-1gram (drop-right (cdr n+1gram) 1))
 
-            (prevs.nexts (addKeyToHashTable order n-1gram (cons (make-hash) (make-hash))))
-          )
-          (if (isEnd? prev)
-            (incCount starts n-1gram 1)
-            "nothing"
-          )
-          (incCount (car prevs.nexts) prev 1)
-          (incCount (cdr prevs.nexts) next 1)
+          (prevs.nexts (addKeyToHashTable order n-1gram (cons (make-hash) (make-hash))))
         )
+        (if (isEnd? prev)
+          (incCount starts n-1gram 1)
+          "nothing"
+        )
+        (incCount (car prevs.nexts) prev 1)
+        (incCount (cdr prevs.nexts) next 1)
         #f
       )
     )
-
-    ; (define (recFun)
-    ;   (let*
-    ;     (
-    ;       (prevCurNext (generate))
-    ;       (prev (car prevCurNext))
-    ;       (cur (cadr prevCurNext))
-    ;       (next (caddr prevCurNext))
-    ;     )
-    ;     (if (not next)
-    ;       "learn finished"
-    ;       (begin
-    ;         (if (isEnd? prev)
-    ;           (incCount starts cur 1)
-    ;           "nothing"
-    ;         )
-    ;         (addNext order cur next 1)
-    ;         (addPrev order cur prev 1)
-    ;         (recFun)
-    ;       )
-    ;     )
-    ;   )
-    ; )
-    ; (recFun)
   )
 )
 
+;=============== generating answer ===============;
+
 (define (pickRandomKeyFromHT hashTable)
-  (define sum 0)
-  (hash-for-each hashTable (lambda (key count) (set! sum (+ count sum))))
+  (define sum (foldl
+    (lambda (cur prev)
+      (+ prev (hash-ref hashTable cur "noghing"))
+    )
+    0
+    (hash-keys hashTable)
+  ))
   (define rand (random sum))
   (define result "empty")
   (hash-for-each hashTable 
@@ -635,7 +515,7 @@
 )
 
 
-(define (generateAnswer starts.order) ; TODO: add direction
+(define (generateAnswer starts.order userResponse)
   (define (forward order n-1gram)
     (println n-1gram)
     (let* 
@@ -672,23 +552,23 @@
       (append pre st post)
     )
   )
-  (let 
+  ; (define (slidingWindow lst windowLength params fun)
+  (let* 
     (
       (starts (car starts.order))
       (order (cdr starts.order))
+      (n-1 (length (car (hash-keys starts))))
+      (stMatch (slidingWindow userResponse n-1 order (lambda (n-1gram order)
+        (if (hash-ref order n-1gram #f)
+          n-1gram
+          #f
+        )
+      )))
     )
-    ; MIXED: 
-    ; (let* 
-    ;   (
-    ;    (n-1grams (hash-keys order))
-    ;    (st (list-ref n-1grams (random (length n-1grams))))
-    ;   )
-    ;   (mixed order st)
-    ; )
-
-    ; FORWARD: 
-    (let ((st (pickRandomKeyFromHT starts)))
-      (forward order st)
+    (println stMatch);
+    (if stMatch
+      (mixed order stMatch)
+      (forward order (pickRandomKeyFromHT starts))
     )
   )
 )
@@ -736,23 +616,12 @@
 
 (visit-doctor 'stop 3 starts.order)
 
-; (define data (readFileAsObject "backup.txt"))
 ; (merge starts.order data)
 
 ; pair: [
 ;   starts: hash(n-1gram, count),
 ;   order: hash(n-1gram, [hashPrevs, hashNexts])
 ; ]
-
-; (prepareForPrint (generateAnswer starts order))
-
-; (generateAnswer starts order)
-
-; (hash-ref followings '(found) 0)
-
-; (parseString (readFileAsString "./freud.txt"))
-; (reWriteFile myHashTable "output.txt")
-; (define n (readFileAsObject "output.txt"))
 
 ; NOTE: не работает с обратным порядком параметров. Скорее всего, при записи и чтении 
 ; теряется мутабельность хэша.
