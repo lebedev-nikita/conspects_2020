@@ -108,14 +108,34 @@
           (userResponse (cadr (assoc 'userResponse assocParamList)))
           (order (cdr starts.order))
           (n-1 (length (car (hash-keys (order)))))
+          (mixedBase (findf (lambda ) userResponse))
         )
+        ; (if (ormap)
+        ;   (generateAnswer starts.order 'mixed)
+        ;   (generateAnswer starts.order 'forward)
+        ; )
 
         (generateAnswer starts.order)
       )
     )
   )
-
 ))
+
+(define (slidingWindow lst windowLength fun params)
+  (if (< (length lst) windowLength)
+    #f
+    (let 
+      (
+        (thisVal (fun (take windowLength) params)
+      )
+      (if (thisVal)
+        thisVal
+        (slidingWindow (cdr lst) windowLength fun params)
+      )
+    )
+  )
+)
+
 
 ; task 7
 ; генерация ответной реплики по userResponse - реплике от пользователя 
