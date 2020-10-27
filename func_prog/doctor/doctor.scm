@@ -105,7 +105,11 @@
       (let* 
         (
           (starts.order (cadr (assoc '|starts.order| assocParamList)))
+          (userResponse (cadr (assoc 'userResponse assocParamList)))
+          (order (cdr starts.order))
+          (n-1 (length (car (hash-keys (order)))))
         )
+
         (generateAnswer starts.order)
       )
     )
@@ -586,8 +590,8 @@
 )
 
 
-(define (generateAnswer starts.order)
-  (define (recGen order n-1gram)
+(define (generateAnswer starts.order) ; TODO: add direction
+  (define (forward order n-1gram)
     (let* 
       (
         (nexts (cdr (hash-ref order n-1gram #f)))
@@ -595,8 +599,31 @@
       )
       (if (isEnd? next)
         (append n-1gram (list next))
-        (cons (car n-1gram) (recGen order (append (cdr n-1gram) (list next))))
+        (cons (car n-1gram) (forward order (append (cdr n-1gram) (list next))))
       )
+    )
+  )
+  (define (backward order st)
+    (let* 
+      (
+        (prevs.nexts (hash-ref order st "nothing"))
+        (prevs (car prevs.nexts))
+        (prev (pickRandomKeyFromHT prevs))
+      )
+      (if (isEnd? prev)
+        st
+        (append (backward order (cons prev (drop-right st 1))) (last-pair st))
+      )
+    )
+  )
+  (define (mixed order st)
+    (let* 
+      (
+        (len (length st))
+        (pre (drop-right (backward order st) len))
+        (post (list-tail (forward order st) len))
+      )
+      (append pre st post)
     )
   )
   (let 
@@ -604,9 +631,19 @@
       (starts (car starts.order))
       (order (cdr starts.order))
     )
-    (let ((st (pickRandomKeyFromHT starts)))
-      (recGen order st)
+    ; MIXED: 
+    (let* 
+      (
+       (n-1grams (hash-keys order))
+       (st (list-ref n-1grams (random (length n-1grams))))
+      )
+      (mixed order st)
     )
+
+    ; FORWARD: 
+    ; (let ((st (pickRandomKeyFromHT starts)))
+    ;   (forward order st)
+    ; )
   )
 )
 
@@ -662,17 +699,17 @@
 
 
 (define starts.order (cons (make-hash) (make-hash)))
-(learn starts.order 2 (parseString (readFileAsString "freud.txt")))
-(writeFile starts.order "backup.txt")
-(define data (readFileAsObject "backup.txt"))
-(merge starts.order data)
+(learn starts.order 4 (parseString (readFileAsString "freud.txt")))
+; (writeFile starts.order "backup.txt")
+; (define data (readFileAsObject "backup.txt"))
+; (merge starts.order data)
+(visit-doctor 'stop 3 starts.order)
 
 ; pair: [
 ;   starts: hash(n-1gram, count),
 ;   order: hash(n-1gram, [hashPrevs, hashNexts])
 ; ]
 
-(define (t) (hash-ref (cdr starts.order) '(found)))
 ; (prepareForPrint (generateAnswer starts order))
 
 ; (generateAnswer starts order)
