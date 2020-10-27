@@ -387,11 +387,12 @@
       (data (read inputPort))
     )
     (close-input-port inputPort)
+    (println "readFileAsObject finished")
     data
   )
 )
 
-(define (reWriteFile data path) 
+(define (writeFile data path)
   (let*
     (
       (outputPort (open-output-file path #:exists 'replace))
@@ -407,16 +408,16 @@
 ; (hash-set! <hash> <key> <val>) 
 ; val: (prevs . nexts)
 
-(define (addKeyToHashTable hashTable symbol)
+(define (addKeyToHashTable hashTable symbol valIfNot)
   (let 
     (
-      (prevs.nexts (hash-ref hashTable symbol #f))
+      (value (hash-ref hashTable symbol #f))
     )
-    (if prevs.nexts
-      prevs.nexts
-      (let ((prevs.nexts (cons (make-hash) (make-hash))))
-        (hash-set! hashTable symbol prevs.nexts)
-        prevs.nexts
+    (if value
+      value
+      (begin
+        (hash-set! hashTable symbol valIfNot)
+        valIfNot
       )
     )
   )
@@ -425,7 +426,7 @@
 (define (addPrev hashTable symbol prev increment)
   (let* 
     (
-      (prevs (car (addKeyToHashTable hashTable symbol)))
+      (prevs (car (addKeyToHashTable hashTable symbol (cons (make-hash) (make-hash)))))
       (count (hash-ref prevs prev 0))
     )
     (hash-set! prevs prev (+ increment count))
@@ -435,7 +436,7 @@
 (define (addNext hashTable symbol next increment)
   (let* 
     (
-      (nexts (cdr (addKeyToHashTable hashTable symbol)))
+      (nexts (cdr (addKeyToHashTable hashTable symbol (cons (make-hash) (make-hash)))))
       (count (hash-ref nexts next 0))
     )
     (hash-set! nexts next (+ increment count))
@@ -584,23 +585,6 @@
   result
 )
 
-(define (mergeHashTables ht1 ht2) ; TODO
-  (hash-for-each ht2
-    (lambda (symbol prevs.nexts)
-      (hash-for-each (car prevs.nexts)
-        (lambda (prev count) 
-          (addPrev ht1 symbol prev count)
-        )
-      )
-      (hash-for-each (cdr prevs.nexts)
-        (lambda (next count) 
-          (addNext ht1 symbol next count)
-        )
-      )
-    )
-  )
-  "mergeHashTables finished"
-)
 
 (define (generateAnswer starts.order)
   (define (recGen order n-1gram)
@@ -627,14 +611,68 @@
 )
 
 (define (getFirstSentence lst)
-  (if (or (isEnd? (car lst)) (null? (car lst)))
-    (car lst)
-    (cons (car lst) (getFirstSentence (cdr lst)))
+  (if (null? lst)
+    lst
+    (if (isEnd? (car lst))
+      (car lst)
+      (cons (car lst) (getFirstSentence (cdr lst)))
+    )
   )
 )
 
+(define (merge pair1 pair2)
+  (define (mergeHashTables ht1 ht2)
+    (hash-for-each ht2
+      (lambda (key count)
+        (incCount ht1 key count)
+      )
+    )
+  )
+  (mergeHashTables (car pair1) (car pair2))
+  (hash-for-each (cdr pair2)
+    (lambda (symbol prevs2.nexts2)
+      (let*
+        (
+          (prevs1.nexts1 (hash-ref (cdr pair1) symbol "nothing"))
+        )
+        (mergeHashTables (car prevs1.nexts1) (car prevs2.nexts2))
+        (mergeHashTables (cdr prevs1.nexts1) (cdr prevs2.nexts2))
+      )
+    )
+  )
+)
+
+(define (mergeHashTables ht1 ht2) ; TODO
+  (hash-for-each ht2
+    (lambda (symbol prevs.nexts)
+      (hash-for-each (car prevs.nexts)
+        (lambda (prev count) 
+          (addPrev ht1 symbol prev count)
+        )
+      )
+      (hash-for-each (cdr prevs.nexts)
+        (lambda (next count) 
+          (addNext ht1 symbol next count)
+        )
+      )
+    )
+  )
+  "mergeHashTables finished"
+)
+
+
 (define starts.order (cons (make-hash) (make-hash)))
-(learn starts.order 4 (parseString (readFileAsString "freud.txt")))
+(learn starts.order 2 (parseString (readFileAsString "freud.txt")))
+(writeFile starts.order "backup.txt")
+(define data (readFileAsObject "backup.txt"))
+(merge starts.order data)
+
+; pair: [
+;   starts: hash(n-1gram, count),
+;   order: hash(n-1gram, [hashPrevs, hashNexts])
+; ]
+
+(define (t) (hash-ref (cdr starts.order) '(found)))
 ; (prepareForPrint (generateAnswer starts order))
 
 ; (generateAnswer starts order)
