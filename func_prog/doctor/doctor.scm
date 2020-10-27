@@ -12,8 +12,7 @@
     (begin
       (printf "next!\n")
       (printf "who are you?\n")
-      (print '**)
-      ; (car (read))
+      (printf "** ")
       (car (parseString (read-line)))
     ) 
   )
@@ -33,13 +32,10 @@
   )
 )
 
-(define (t) (doctorDriverLoop 'Nikita '()))
-
 (define (doctorDriverLoop name oldPhrases starts.order)
   (newline)
-  (print '**) ; доктор ждёт ввода реплики пациента, приглашением к которому является **
-  ; (let ((userResponse (read)))
-  (let ((userResponse (parseString (read-line))))
+  (printf "** ") ; доктор ждёт ввода реплики пациента, приглашением к которому является **
+  (let ((userResponse (getFirstSentence (parseString (read-line)))))
     (cond 
       ((equal? userResponse '(goodbye)) ; реплика '(goodbye) служит для выхода из цикла
             (printf "Goodbye, ~a!\n" name)
@@ -395,6 +391,17 @@
   )
 )
 
+(define (reWriteFile data path) 
+  (let*
+    (
+      (outputPort (open-output-file path #:exists 'replace))
+    )
+    (print data outputPort)
+    (close-output-port outputPort)
+    "writeFile finished"
+  )
+)
+
 
 ; (hash-ref <hash> <key> <failval>)
 ; (hash-set! <hash> <key> <val>) 
@@ -435,7 +442,7 @@
   )
 )
 
-(define (isEnd symbol)
+(define (isEnd? symbol)
   (or
     (equal? symbol '|.|)
     (equal? symbol '|?|)
@@ -498,7 +505,7 @@
   (firstFill)
 
   (define (endInside lst) 
-    (ormap isEnd lst)
+    (ormap isEnd? lst)
   )
 
   (define (getNgram)
@@ -540,7 +547,7 @@
         (if (not next)
           "learn finished"
           (begin
-            (if (isEnd prev)
+            (if (isEnd? prev)
               (incCount starts cur 1)
               "nothing"
             )
@@ -602,7 +609,7 @@
         (nexts (cdr (hash-ref order n-1gram #f)))
         (next (pickRandomKeyFromHT nexts))
       )
-      (if (isEnd next)
+      (if (isEnd? next)
         (append n-1gram (list next))
         (cons (car n-1gram) (recGen order (append (cdr n-1gram) (list next))))
       )
@@ -619,12 +626,17 @@
   )
 )
 
+(define (getFirstSentence lst)
+  (if (or (isEnd? (car lst)) (null? (car lst)))
+    (car lst)
+    (cons (car lst) (getFirstSentence (cdr lst)))
+  )
+)
+
 (define starts.order (cons (make-hash) (make-hash)))
 (learn starts.order 4 (parseString (readFileAsString "freud.txt")))
 ; (prepareForPrint (generateAnswer starts order))
 
-; (generateAnswer starts order)
-; (generateAnswer starts order)
 ; (generateAnswer starts order)
 
 ; (hash-ref followings '(found) 0)

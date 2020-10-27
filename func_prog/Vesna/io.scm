@@ -65,6 +65,17 @@
   )
 )
 
+(define (reWriteFile data path) 
+  (let*
+    (
+      (outputPort (open-output-file path #:exists 'replace))
+    )
+    (print data outputPort)
+    (close-output-port outputPort)
+    "writeFile finished"
+  )
+)
+
 
 ; (hash-ref <hash> <key> <failval>)
 ; (hash-set! <hash> <key> <val>) 
