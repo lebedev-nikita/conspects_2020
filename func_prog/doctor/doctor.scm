@@ -516,38 +516,53 @@
 
 
 (define (generateAnswer starts.order userResponse)
-  (define (forward order n-1gram)
-    (println n-1gram)
+  (define (wantEnd hashTable)
+    (let 
+      ((a (or
+        (and (hash-ref hashTable '|.| #f) '|.|)
+        (and (hash-ref hashTable '|!| #f) '|!|)
+        (and (hash-ref hashTable '|?| #f) '|?|)
+      )))
+      (or a (pickRandomKeyFromHT hashTable))
+    )
+  )
+  (define (forward order n-1gram lenLeft)
+    ; (println n-1gram)
     (let* 
       (
-        (nexts (cdr (hash-ref order n-1gram #f)))
-        (next (pickRandomKeyFromHT nexts))
+        (nexts (cdr (hash-ref order n-1gram "nothing")))
+        (next (if (<= lenLeft 0)
+          (wantEnd nexts)
+          (pickRandomKeyFromHT nexts)
+        ))
       )
       (if (isEnd? next)
         (append n-1gram (list next))
-        (cons (car n-1gram) (forward order (append (cdr n-1gram) (list next))))
+        (cons (car n-1gram) (forward order (append (cdr n-1gram) (list next)) (- lenLeft 1)))
       )
     )
   )
-  (define (backward order st)
+  (define (backward order st lenLeft)
     (let* 
       (
-        (prevs.nexts (hash-ref order st "nothing"))
-        (prevs (car prevs.nexts))
-        (prev (pickRandomKeyFromHT prevs))
+        (prevs (car (hash-ref order st "nothing")))
+        (prev (if (<= lenLeft 0)
+          (wantEnd prevs)
+          (pickRandomKeyFromHT prevs)
+        ))
       )
       (if (isEnd? prev)
         st
-        (append (backward order (cons prev (drop-right st 1))) (last-pair st))
+        (append (backward order (cons prev (drop-right st 1)) (- lenLeft 1)) (last-pair st))
       )
     )
   )
-  (define (mixed order st)
+  (define (mixed order st lenLeft)
     (let* 
       (
         (len (length st))
-        (pre (drop-right (backward order st) len))
-        (post (list-tail (forward order st) len))
+        (pre (drop-right (backward order st lenLeft) len))
+        (post (list-tail (forward order st lenLeft) len))
       )
       (append pre st post)
     )
@@ -564,11 +579,12 @@
           #f
         )
       )))
+      (lenLeft (random 20))
     )
-    (println stMatch);
+    ; (println stMatch); NOTE: вывод совпадения n-1граммы из пользовательского ввода с текстом
     (if stMatch
-      (mixed order stMatch)
-      (forward order (pickRandomKeyFromHT starts))
+      (mixed order stMatch lenLeft)
+      (forward order (pickRandomKeyFromHT starts) (* 2 lenLeft))
     )
   )
 )
@@ -577,7 +593,7 @@
   (if (null? lst)
     lst
     (if (isEnd? (car lst))
-      (car lst)
+      (list (car lst))
       (cons (car lst) (getFirstSentence (cdr lst)))
     )
   )
