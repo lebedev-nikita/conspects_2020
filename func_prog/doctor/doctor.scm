@@ -107,8 +107,8 @@
           (starts.order (cadr (assoc '|starts.order| assocParamList)))
           (userResponse (cadr (assoc 'userResponse assocParamList)))
           (order (cdr starts.order))
-          (n-1 (length (car (hash-keys (order)))))
-          (mixedBase (findf (lambda ) userResponse))
+          (n-1 (length (car (hash-keys order))))
+          ; (mixedBase (findf (lambda ) userResponse))
         )
         ; (if (ormap)
         ;   (generateAnswer starts.order 'mixed)
@@ -121,20 +121,6 @@
   )
 ))
 
-(define (slidingWindow lst windowLength fun params)
-  (if (< (length lst) windowLength)
-    #f
-    (let 
-      (
-        (thisVal (fun (take windowLength) params)
-      )
-      (if (thisVal)
-        thisVal
-        (slidingWindow (cdr lst) windowLength fun params)
-      )
-    )
-  )
-)
 
 
 ; task 7
@@ -432,20 +418,6 @@
 ; (hash-set! <hash> <key> <val>) 
 ; val: (prevs . nexts)
 
-(define (addKeyToHashTable hashTable symbol valIfNot)
-  (let 
-    (
-      (value (hash-ref hashTable symbol #f))
-    )
-    (if value
-      value
-      (begin
-        (hash-set! hashTable symbol valIfNot)
-        valIfNot
-      )
-    )
-  )
-)
 
 (define (addPrev hashTable symbol prev increment)
   (let* 
@@ -474,18 +446,6 @@
     (equal? symbol '|!|)
   )
 )
-
-(define (incCount hashTable key increment)
-  (let*
-    (
-      (count (hash-ref hashTable key 0))
-      (newCount (+ increment count))
-    )
-    (hash-set! hashTable key newCount)
-    newCount
-  )
-)
-
 
 (define (createNgramGenereator N symbolList)
   (define n-1 (- N 1))
@@ -554,36 +514,101 @@
   ; (prev (cur: n-1) next)
 )
 
+(define (slidingWindow lst windowLength params fun)
+  (if (< (length lst) windowLength)
+    #f
+    (let 
+      (
+        (thisVal (fun (take lst windowLength) params))
+      )
+      (if thisVal
+        thisVal
+        (slidingWindow (cdr lst) windowLength params fun)
+      )
+    )
+  )
+)
+
+(define (incCount hashTable key increment)
+  (let*
+    (
+      (count (hash-ref hashTable key 0))
+      (newCount (+ increment count))
+    )
+    (hash-set! hashTable key newCount)
+    newCount
+  )
+)
+
+(define (addKeyToHashTable hashTable symbol valIfNot)
+  (let 
+    (
+      (value (hash-ref hashTable symbol #f))
+    )
+    (if value
+      value
+      (begin
+        (hash-set! hashTable symbol valIfNot)
+        valIfNot
+      )
+    )
+  )
+)
+
 (define (learn starts.order N symbolList)
   (let 
     ( 
       (starts (car starts.order))
       (order (cdr starts.order))
-      (generate (createNgramGenereator N symbolList))
+      ; (generate (createNgramGenereator N symbolList))
     )
-    (define (recFun)
-      (let*
-        (
-          (prevCurNext (generate))
-          (prev (car prevCurNext))
-          (cur (cadr prevCurNext))
-          (next (caddr prevCurNext))
-        )
-        (if (not next)
-          "learn finished"
-          (begin
-            (if (isEnd? prev)
-              (incCount starts cur 1)
-              "nothing"
-            )
-            (addNext order cur next 1)
-            (addPrev order cur prev 1)
-            (recFun)
+    (slidingWindow (cons '|.| symbolList) (+ N 1) starts.order 
+      (lambda (n+1gram starts.order)
+        (let*
+          (
+            (starts (car starts.order))
+            (order (cdr starts.order))
+
+            (prev (car n+1gram))
+            (next (last n+1gram))
+            (n-1gram (drop-right (cdr n+1gram) 1))
+
+            (prevs.nexts (addKeyToHashTable order n-1gram (cons (make-hash) (make-hash))))
           )
+          (if (isEnd? prev)
+            (incCount starts n-1gram 1)
+            "nothing"
+          )
+          (incCount (car prevs.nexts) prev 1)
+          (incCount (cdr prevs.nexts) next 1)
         )
+        #f
       )
     )
-    (recFun)
+
+    ; (define (recFun)
+    ;   (let*
+    ;     (
+    ;       (prevCurNext (generate))
+    ;       (prev (car prevCurNext))
+    ;       (cur (cadr prevCurNext))
+    ;       (next (caddr prevCurNext))
+    ;     )
+    ;     (if (not next)
+    ;       "learn finished"
+    ;       (begin
+    ;         (if (isEnd? prev)
+    ;           (incCount starts cur 1)
+    ;           "nothing"
+    ;         )
+    ;         (addNext order cur next 1)
+    ;         (addPrev order cur prev 1)
+    ;         (recFun)
+    ;       )
+    ;     )
+    ;   )
+    ; )
+    ; (recFun)
   )
 )
 
@@ -612,6 +637,7 @@
 
 (define (generateAnswer starts.order) ; TODO: add direction
   (define (forward order n-1gram)
+    (println n-1gram)
     (let* 
       (
         (nexts (cdr (hash-ref order n-1gram #f)))
@@ -652,18 +678,18 @@
       (order (cdr starts.order))
     )
     ; MIXED: 
-    (let* 
-      (
-       (n-1grams (hash-keys order))
-       (st (list-ref n-1grams (random (length n-1grams))))
-      )
-      (mixed order st)
-    )
+    ; (let* 
+    ;   (
+    ;    (n-1grams (hash-keys order))
+    ;    (st (list-ref n-1grams (random (length n-1grams))))
+    ;   )
+    ;   (mixed order st)
+    ; )
 
     ; FORWARD: 
-    ; (let ((st (pickRandomKeyFromHT starts)))
-    ;   (forward order st)
-    ; )
+    (let ((st (pickRandomKeyFromHT starts)))
+      (forward order st)
+    )
   )
 )
 
@@ -699,31 +725,19 @@
   )
 )
 
-(define (mergeHashTables ht1 ht2) ; TODO
-  (hash-for-each ht2
-    (lambda (symbol prevs.nexts)
-      (hash-for-each (car prevs.nexts)
-        (lambda (prev count) 
-          (addPrev ht1 symbol prev count)
-        )
-      )
-      (hash-for-each (cdr prevs.nexts)
-        (lambda (next count) 
-          (addNext ht1 symbol next count)
-        )
-      )
-    )
-  )
-  "mergeHashTables finished"
-)
 
-
-(define starts.order (cons (make-hash) (make-hash)))
-(learn starts.order 4 (parseString (readFileAsString "freud.txt")))
+; ОБУЧАЕМСЯ
+; (define starts.order (cons (make-hash) (make-hash)))
+; (learn starts.order 4 (parseString (readFileAsString "freud.txt")))
 ; (writeFile starts.order "backup.txt")
+
+; ВСПОМИНАЕМ
+(define starts.order (readFileAsObject "backup.txt"))
+
+(visit-doctor 'stop 3 starts.order)
+
 ; (define data (readFileAsObject "backup.txt"))
 ; (merge starts.order data)
-(visit-doctor 'stop 3 starts.order)
 
 ; pair: [
 ;   starts: hash(n-1gram, count),
@@ -740,7 +754,5 @@
 ; (reWriteFile myHashTable "output.txt")
 ; (define n (readFileAsObject "output.txt"))
 
-; (mergeHashTables n myHashTable)
-; (mergeHashTables myHashTable n) 
 ; NOTE: не работает с обратным порядком параметров. Скорее всего, при записи и чтении 
 ; теряется мутабельность хэша.
