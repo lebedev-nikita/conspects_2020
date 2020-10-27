@@ -259,13 +259,33 @@
   "mergeHashTables finished"
 )
 
+(define (generateAnswer starts order)
+  (define (recGen order n-1gram)
+    (let* 
+      (
+        (nexts (cdr (hash-ref order n-1gram #f)))
+        (next (pickRandomKeyFromHT nexts))
+      )
+      (if (isEnd next)
+        (append n-1gram (list next))
+        (cons (car n-1gram) (recGen order (append (cdr n-1gram) (list next))))
+      )
+    )
+  )
+  (let ((st (pickRandomKeyFromHT starts)))
+    (recGen order st)
+  )
+)
 
-(define firsts (make-hash))
-(define followings (make-hash))
-(learn firsts followings 2 (parseString (readFileAsString "freud.txt")))
+(define starts (make-hash))
+(define order (make-hash))
+(learn starts order 3 (parseString (readFileAsString "freud.txt")))
+(prepareForPrint (generateAnswer starts order))
+; (generateAnswer starts order)
+; (generateAnswer starts order)
+; (generateAnswer starts order)
 
 ; (hash-ref followings '(found) 0)
-firsts
 
 ; (parseString (readFileAsString "./freud.txt"))
 ; (reWriteFile myHashTable "output.txt")
