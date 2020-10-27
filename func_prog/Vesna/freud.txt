@@ -1,5 +1,5 @@
 
-PREFACE
+
 Few, especially in this country, realize that while Freudian themes have rarely
 found a place on the programs of the American Psychological Association,
 they have attracted great and growing attention and found frequent
@@ -89,7 +89,7 @@ great synthesis of the future that now seems to impend our science will be
 made vastly richer and deeper on the theoretical side and also far more
 practical than it has ever been before.
 
-I DO not know how familiar some of you may be, either from your reading or
+I do not know how familiar some of you may be, either from your reading or
 from hearsay, with psychoanalysis. But, in keeping with the title of these
 lectures—A General Introduction to Psychoanalysis—I am obliged to proceed as
 though you knew nothing about this subject, and stood in need of preliminary
@@ -364,9 +364,9 @@ These, therefore, are but a few of the difficulties which stand in the way of
 your occupation with psychoanalysis. They are perhaps more than enough for
 a beginning. If you can overcome their deterrent impression, we shall
 continue.
- SECOND LECTURE
-THE PSYCHOLOGY OF ERRORS
-WE begin with an investigation, not with hypotheses. To this end we
+  
+   
+We begin with an investigation, not with hypotheses. To this end we
 choose certain phenomena which are very frequent, very familiar and very little
 heeded, and which have nothing to do with the pathological, inasmuch as they
 can be observed in every normal person. I refer to the errors which an individual
@@ -695,28 +695,28 @@ What friend! and do we let him go away
 In this delusion—let him go away?
 Not call him back immediately, not open
 His eyes upon the spot?
-OCTAVIO.
+.
 (Recovering himself out of a deep study)
 He has now opened mine,
 And I see more than pleases me.
 Q.
 What is it?
-OCTAVIO.
+.
 A curse on this journey!
 Q.
 But why so? What is it?
-OCTAVIO.
+.
 Come, come along, friend! I must follow up
 The ominous track immediately. Mine eyes
 Are opened now, and I must use them. Come!
 (Draws Q. on with him.)
 Q.
 What now? Where go you then?
-OCTAVIO.
+.
 (Hastily.) To her herself
 Q.
 To—
-OCTAVIO.
+.
 (Interrupting him and correcting himself.)
 To the duke. Come, let us go—.
 Octavio meant to say, "To him, to the lord," but his tongue slips and through
@@ -727,7 +727,7 @@ occurs in the Merchant of Venice, in the famous scene in which the fortunate
 suitor makes his choice among the three caskets; and perhaps I can do no
 better than to read to you here Rank's short account of the incident:
 "A slip of the tongue which occurs in Shakespeare's Merchant of Venice, Act
-III, Scene II, is exceedingly delicate in its poetic motivation and technically
+, Scene , is exceedingly delicate in its poetic motivation and technically
 brilliant in its handling. Like the slip in Wallenstein quoted by Freud
 (Psychopathology of Everyday Life, 2d ed., p. 48), it shows that the poets well
 know the meaning of these errors and assume their comprehensibility to the
@@ -738,7 +738,7 @@ she is attached, she fears that he, too, will choose the wrong casket. She
 would like to tell him that even in that event he may rest assured of her love,
 but is prevented from so doing by her oath. In this inner conflict the poet
 makes her say to the welcome suitor:
-PORTIA:
+:
 I pray you tarry; pause a day or two,
 Before you hazard; for, in choosing wrong
 I lose your company; therefore, forbear a while:
@@ -774,9 +774,9 @@ always read "Agamemnon" for "angenommen," so intently had he read
 Homer. Herein is really contained the whole theory of misreadings.
 At the next session we will see whether we can agree with the poets in their
 conception of the meaning of psychological errors.
- THIRD LECTURE
-THE PSYCHOLOGY OF ERRORS—(CONTINUED)
-AT the last session we conceived the idea of considering the error, not in its
+  
+   —()
+At the last session we conceived the idea of considering the error, not in its
 relation to the intended act which it distorted, but by itself alone, and we received
 the impression that in isolated instances it seems to betray a meaning of its own.
 We declared that if this fact could be established on a larger scale, then the
@@ -1339,9 +1339,9 @@ secret. As a rule, one does not dare do this. One would feel as though he
 were again becoming superstitious via a detour through science. But not all
 omens come true, and you will understand from our theories that they need
 not all come true.
- FOURTH LECTURE
-THE PSYCHOLOGY OF ERRORS—(CONCLUSION)
-WE may certainly put it down as the conclusion of our labors up to this
+  
+   —()
+We may certainly put it down as the conclusion of our labors up to this
 point that errors have a meaning, and we may make this conclusion the basis of
 our further investigations. Let me stress the fact once more that we do not
 assert—and for our purposes need not assert—that every single mistake which
@@ -1945,12 +1945,9 @@ You are right; that is conspicuous and demands an explanation. I shall not
 give this explanation to you, however, but shall guide you slowly to the
 connecting links from which the explanation will force itself upon you without
 any aid from me.
- Part II
-THE DREAM
- FIFTH LECTURE
-THE DREAM
-Difficulties and Preliminary Approach
-ONE day the discovery was made that the disease symptoms of certain
+ 
+Difficulties and Preliminary Approach.
+One day the discovery was made that the disease symptoms of certain
 nervous patients have a meaning. Thereupon the psychoanalytic method of
 therapy was founded. In this treatment it happened that the patients also
 presented dreams in place of their symptoms. Herewith originated the conjecture
@@ -2428,10 +2425,9 @@ rest on a characteristic of the dream which is still unknown to us, perhaps
 even one of those characteristics which we are seeking. It is possible, on the
 other hand, that we are wrong in trying to read a meaning into this similarity
 of designation. Yet that can only be cleared up later.
- SIXTH LECTURE
-THE DREAM
-Hypothesis and Technique of Interpretation
-WE must find a new path, a new method, in order to proceed with the
+  
+Hypothesis and Technique of Interpretation.
+We must find a new path, a new method, in order to proceed with the
 investigation of the dream. I shall now make an obvious suggestion. Let us
 assume as a hypothesis for everything which follows, that the dream is not a
 somatic but a psychic phenomenon. You appreciate the significance of that
@@ -2793,10 +2789,9 @@ conclude that in the case of the associations to the dream element they will
 be determined as well by the dream element as by its unknown essential.
 Accordingly, we have advanced a few steps in the formulation of our dream
 technique.
- SEVENTH LECTURE
-THE DREAM
-Manifest Dream Content and Latent Dream Thought
-WE have not studied the problem of errors in vain. Thanks to our efforts
+
+Manifest Dream Content and Latent Dream Thought.
+We have not studied the problem of errors in vain. Thanks to our efforts
 in this field, under the conditions known to you, we have evolved two different
 things, a conception of the elements of the dream and a technique for dream
 interpretation. The conception of the dream element goes to show something
@@ -3147,10 +3142,8 @@ is incomprehensible. I really believe that we are not yet fully equipped for
 dream interpretation, and that we must first receive further instruction and
 preparation.
  
-EIGHTH LECTURE
-THE DREAM
-Dreams of Childhood
-WE think we have advanced too rapidly. Let us go back a little. Before
+Dreams of Childhood.
+We think we have advanced too rapidly. Let us go back a little. Before
 our last attempt to overcome the difficulties of dream distortion through our
 technique, we had decided that it would be best to avoid them by limiting
 ourselves only to those dreams in which distortion is either entirely absent or of
@@ -3447,10 +3440,8 @@ translated; their distortion must be annulled; their manifest content replaced
 by their latent thought before we can judge whether what we have found in
 children's dreams may claim a universal application for all dreams.
  
-NINTH LECTURE
-THE DREAM
 The Dream Censor
-WE have learned to know the origin, nature and function of the dream
+We have learned to know the origin, nature and function of the dream
 from the study of children's dreams. Dreams are the removal of sleep-disturbing
 psychic stimuli by way of hallucinated satisfaction. Of adults' dreams, to be sure,
 we could explain only one group, what we characterized as dreams of an infantile
@@ -3818,11 +3809,9 @@ unconscious thus receives a new meaning for us; the idea of "at present" or
 "at a specific time" disappears from its conception, for it can also mean
 permanently unconscious, not merely latent at the time. Obviously we shall
 have to learn more of this at another session.
- 
-TENTH LECTURE
-THE DREAM
+
 Symbolism in the Dream
-WE have discovered that the distortion of dreams, a disturbing element in
+We have discovered that the distortion of dreams, a disturbing element in
 our work of understanding them, is the result of a censorious activity which is
 directed against the unacceptable of the unconscious wish-impulses. But, of
 course, we have not maintained that censorship is the only factor which is to
@@ -4435,10 +4424,7 @@ spite of the fact that symbolism in myth, religion, art and speech is
 undoubtedly so prevalent. Is not this again because of its relationship to
 sexuality?
  
-ELEVENTH LECTURE
-THE DREAM
-The Dream-Work
-IF you have mastered dream censorship and symbolic representation, you are,
+If you have mastered dream censorship and symbolic representation, you are,
 to be sure, not yet adept in dream distortion, but you are nevertheless in a
 position to understand most dreams. For this you employ two mutually
 supplementary methods, call up the associations of the dreamer until you have
@@ -4807,10 +4793,8 @@ The time has probably come, however, to illustrate separately, by various
 little examples of dreams, the connected facts for which you have been
 prepared.
  
-TWELFTH LECTURE
-THE DREAM
 Analysis of Sample Dreams
-I HOPE you will not be disappointed if I again lay before you excerpts from
+I hope you will not be disappointed if I again lay before you excerpts from
 dream analyses instead of inviting you to participate in the interpretation of a
 beautiful long dream. You will say that after so much preparation you ought to
 have this right, and that after the successful interpretation of so many thousands
@@ -5255,10 +5239,8 @@ argument for the idea that he would have to be crazy in order to marry her
 now. But from my knowledge of the situation I can assume with certainty that
 the wish to be as crazy as that nevertheless exists in him.
  
-THIRTEENTH LECTURE
-THE DREAM
 Archaic Remnants and Infantilism in the Dream
-LET us revert to our conclusion that the dream-work, under the influence of
+Let us revert to our conclusion that the dream-work, under the influence of
 the dream censorship, transforms the latent dream thoughts into some other
 form of expression. The latent thoughts are no other than the conscious thoughts
 known to us in our waking hours; the new mode of expression is
@@ -5665,10 +5647,10 @@ would be this, that only in this manner can a dream be built up, that
 dynamically the dream-stimulus can be satisfied only in this way. But for the
 time being we have no right to give such an answer.
  
-FOURTEENTH LECTURE
-THE DREAM
+ 
+ 
 Wish Fulfillment
-MAY I bring to your attention once more the ground we have already
+May I bring to your attention once more the ground we have already
 covered? How, when we met with dream distortion in the application of our
 technique, we decided to leave it alone for the time being, and set out to obtain
 decisive information about the nature of the dream by way of infantile dreams?
@@ -6105,10 +6087,10 @@ there not hope in the thought that this science has a continuation which will
 be brought to light either by ourselves or by those to follow? And have not we
 ourselves discovered a sufficient number of new and surprising things?
  
-FIFTEENTH LECTURE
-THE DREAM
+ 
+ 
 Doubtful Points and Criticism
-LET us not leave the subject of dreams before we have touched upon the
+Let us not leave the subject of dreams before we have touched upon the
 most common doubts and uncertainties which have arisen in connection with the
 new ideas and conceptions we have discussed up to this point. The more attentive
 members of the audience probably have already accumulated some material
@@ -6475,16 +6457,8 @@ neurotic symptom with the rapidity of transformation which makes of the
 dreamer an alert and reasonable individual, we gain the certainty that the
 neurosis also is based only on a change in the balance of the forces of psychic
 life.
- 
-Part III
-GENERAL THEORY
-OF THE
-NEUROSES
- 
-SIXTEENTH LECTURE
-GENERAL THEORY OF THE NEUROSES
-Psychoanalysis and Psychiatry
-I AM very glad to welcome you back to continue our discussions. I last
+     
+I am very glad to welcome you back to continue our discussions. I last
 lectured to you on the psychoanalytic treatment of errors and of the dream. Today I should like to introduce you to an understanding of neurotic phenomena,
 which, as you soon will discover, have much in common with both of those topics.
 But I shall tell you in advance that I cannot leave you to take the same attitude
@@ -6880,10 +6854,10 @@ actually been translated into therapeutic power; moreover, that in
 disturbances which are most difficult to reach we can under certain conditions
 secure results which are second to none in the field of internal therapeutics.
  
-SEVENTEENTH LECTURE
-GENERAL THEORY OF THE NEUROSES
+ 
+    
 The Meaning of the Symptoms
-IN the last lecture I explained to you that clinical psychiatry concerns itself
+In the last lecture I explained to you that clinical psychiatry concerns itself
 very little with the form under which the symptoms appear or with the burden
 they carry, but that it is precisely here that psychoanalysis steps in and shows
 that the symptom carries a meaning and is connected with the experience of the
@@ -7354,10 +7328,10 @@ additions. Probably they as well can be fitted into the theory of dream life,
 built up on the basis of other dreams,—not however by straining the point,
 but by the gradual broadening of our views.
  
-EIGHTEENTH LECTURE
-GENERAL THEORY OF THE NEUROSES
+ 
+    
 Traumatic Fixation—The Unconscious
-I SAID last time that we would not continue our work from the standpoint of
+I  last time that we would not continue our work from the standpoint of
 our doubts, but on the basis of our results. We have not even touched upon two
 of the most interesting conclusions, derived equally from the same two sample
 analyses.
@@ -7741,10 +7715,10 @@ urbanity, and emancipation of the opposition from all restraints of impartial
 logic. We were compelled to disturb the peace of the world, in addition, in
 another manner, of which you will soon come to know.
  
-NINETEENTH LECTURE
-GENERAL THEORY OF THE NEUROSES
+ 
+    
 Resistance and Suppression
-IN order to progress in our understanding of the neuroses, we need new
+In order to progress in our understanding of the neuroses, we need new
 experiences and we are about to obtain two. Both are very remarkable and were
 at the time of their discovery, very surprising. You are, of course, prepared for
 both from our discussions of the past semester.
@@ -8211,10 +8185,10 @@ unnatural. As to these last points, we shall come to no agreement until we
 have submitted man's sexual life to a thorough investigation, and thus
 ascertained what one is justified in calling sexual.
  
-TWENTIETH LECTURE
-GENERAL THEORY OF THE NEUROSES
+ 
+    
 The Sexual Life of Man
-ONE might think we could take for granted what we are to understand by
+One might think we could take for granted what we are to understand by
 the term "sexual." Of course, the sexual is the indecent, which we must not talk
 about. I have been told that the pupils of a famous psychiatrist once took the
 trouble to convince their teacher that the symptoms of hysteria very frequently
@@ -8684,10 +8658,10 @@ means only a very limited thing: normal sexual life in the service of
 reproduction.
  
  
-TWENTY-FIRST LECTURE
-GENERAL THEORY OF THE NEUROSES
+- 
+    
 Development of the Libido and Sexual Organizations
-I AM under the impression that I did not succeed in convincing you of the
+I  under the impression that I did not succeed in convincing you of the
 significance of perversions for our conception of sexuality. I should therefore like
 to clarify and add as much as I can.
 It was not only perversions that necessitated an alteration of our conception
@@ -9233,10 +9207,10 @@ exposes in the healthy dreamer as well. Accordingly here is one of the
 motives which led us to deal with the study of the dream before we
 considered the neurotic symptom.
  
-TWENTY-SECOND LECTURE
-GENERAL THEORY OF THE NEUROSES
+- 
+    
 Theories of Development and Regression—Etiology
-WE have learned that the libidio goes through an extensive development
+We have learned that the libidio goes through an extensive development
 before it can enter the service of reproduction in a way which may be regarded
 as normal. Now I wish to present to you what importance this fact possesses for
 the causation of neuroses.
@@ -9774,10 +9748,8 @@ will not be surprised to hear that there are "ego-regressions," and you will
 want to know what role this return of the ego to former phases of
 development plays in neurotic disease.
  
-TWENTY-THIRD LECTURE
-GENERAL THEORY OF THE NEUROSES
-The Development of the Symptoms
-IN the layman's eyes the symptom shows the nature of the disease, and cure
+The Development of the Symptoms.
+In the layman's eyes the symptom shows the nature of the disease, and cure
 means removal of symptoms. The physician, however, finds it important to
 distinguish the symptoms from the disease and recognizes that doing away with
 the symptoms is not necessarily curing the disease. Of course, the only tangible
@@ -9905,17 +9877,7 @@ the inherited disposition and the tendency acquired in early childhood. We
 know that a schematic representation is most acceptable to the student. Let
 us combine these relations as follows:
 Cause of the == Disposition as + accidental
- 
-neurosis determined by
-libido fixation
-|
-experiences
-(traumatic
-element)
-Sexual constitution
-(pre-historic experience)
-Infantile
-experience
+
 The hereditary sexual constitution provides us with manifold tendencies,
 varying with the special emphasis given one or the other component of the
 instinct, either individually or in combination. With the factor of infantile
@@ -10342,10 +10304,10 @@ admiration for himself and so, by means of his imagination, achieves the very
 things which had at first only an imaginary existence for him: honor, power,
 and the love of women.
  
-TWENTY-FOURTH LECTURE
-GENERAL THEORY OF THE NEUROSES
+- 
+    
 Ordinary Nervousness
-IN our last discussion we accomplish a difficult task. Now I shall temporarily
+In our last discussion we accomplish a difficult task. Now I shall temporarily
 leave our subject and address myself to you.
 For I know quite well that you are dissatisfied. You thought that an
 introduction to psychoanalysis would be quite a different matter. You
@@ -10741,10 +10703,8 @@ struggle with the neurosis brought out by the occasion, and ignore its organic
 cause. The result will justify now one, now the other method of procedure; no
 general laws can be laid down for such mixed cases.
  
-TWENTY-FIFTH LECTURE
-GENERAL THEORY OF THE NEUROSES
-Fear and Anxiety
-PROBABLY you will term what I told you about ordinary nervousness in
+Fear and Anxiety.
+You will term what I told you about ordinary nervousness in
 my last lecture most fragmentary and unsatisfactory information. I know this,
 and I think you were probably most surprised that I did not mention fear, which
 most nervous people complain of and describe as their greatest source of
@@ -11265,10 +11225,10 @@ fate of the libido and the unconscious system. There is only one disconnected
 point, one inconsistency in our hypothesis: the indisputable fact that real fear
 must be considered an expression of the ego's instincts of self-preservation.
  
-TWENTY-SIXTH LECTURE
-GENERAL THEORY OF THE NEUROSES
+- 
+    
 The Libido Theory and Narcism
-REPEATEDLY in the past and more recently we have dealt with the
+Repeatedly in the past and more recently we have dealt with the
 distinction between the ego instincts and the sexual instincts. At first, suppression
 taught us that the two may be flatly opposed to each other, that in the struggle
 the sexual instincts suffer apparent defeat and are forced to obtain satisfaction
@@ -11435,7 +11395,7 @@ the sex object becomes all powerful; it has virtually sucked up the ego.
 I think you will find it a pleasant change if after the dry phantasy of science I
 present to you a poetic representation of the economic contrast between
 narcism and being in love. I take it from the Westostliche Divans of Goethe:
-SULEIKA:
+:
 Conqueror and serf and nation;
 They proclaim it joyously;
 Mankind's loftiest elation,
@@ -11444,7 +11404,7 @@ Life's enchantment lures and lingers,
 Of yourself is not afar,
 All may slip through passive fingers,
 If you tarry as you are.
-HATEM:
+:
 Never could I be thus ravished,
 Other thoughts are in my mind,
 All the gladness earth has lavished
@@ -11801,11 +11761,9 @@ is awakened by the realization of danger. Men who have survived the
 endangering of their lives tell us that they were not at all afraid, they only
 acted. They turned the weapon against the wild animal, and that was in fact
 the most purposeful thing to do.
- 
-TWENTY-SEVENTH LECTURE
-GENERAL THEORY OF THE NEUROSES
-Transference
-WE are nearing the close of our discussions, and you probably cherish
+
+Transference.
+We are nearing the close of our discussions, and you probably cherish
 certain expectations, which shall not be disappointed. You think, I suppose, that
 I have not guided you through thick and thin of psychoanalytic subject matter to
 dismiss you without a word about therapy, which furnishes the only possibility of
@@ -12320,10 +12278,8 @@ this characteristic we had separated it from the first group of neurotics
 at therapy confirms this supposition. They show no neurosis. They, therefore,
 are inaccessible to our efforts and we cannot cure them.
  
-TWENTY-EIGHTH LECTURE
-GENERAL THEORY OF THE NEUROSES
-Analytical Therapy
-YOU know our subject for today. You asked me why we do not make use of
+Analytical Therapy.
+You know our subject for today. You asked me why we do not make use of
 direct suggestion in psychoanalytic therapy, when we admit that our influence
 depends substantially upon transference, i.e., suggestion, for you have come to
 doubt whether or not we can answer for the objectivity of our psychological
@@ -12556,7 +12512,6 @@ releasing its objects, and by the obstinate narcism which will not permit the
 object-transference to effect more than just so much. Perhaps we shall obtain
 further light on the dynamics of the healing process by the remark that we
 are able to gather up the entire libido which has become withdrawn from the 
- 
 control of the ego by drawing a part of it to ourselves in the process of
 transference.
 It is to be remembered that we cannot reach a direct conclusion as to the
