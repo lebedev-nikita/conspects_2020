@@ -19,7 +19,7 @@
     '(time to go home)
     (let ((name (askPatientName)))
       (if (equal? name stopWord)
-        '(working day finished)
+        (printf "working day finished")
         (begin
           (printf "hello, ~a!\n" name)
           (printf "what seems to be the trouble?")
@@ -42,8 +42,7 @@
             (newline)
       )
       (else 
-        (print 
-          ; task 7
+        (printf 
           (prepareForPrint
             (reply strategies (list
               (list 'userResponse userResponse) 
@@ -576,7 +575,7 @@
           #f
         )
       )))
-      (lenLeft (random 20))
+      (lenLeft (random 15))
     )
     ; (println stMatch); NOTE: вывод совпадения n-1граммы из пользовательского ввода с текстом
     (if stMatch
@@ -609,7 +608,7 @@
     (lambda (symbol prevs2.nexts2)
       (let*
         (
-          (prevs1.nexts1 (hash-ref (cdr pair1) symbol "nothing"))
+          (prevs1.nexts1 (addKeyToHashTable (cdr pair1) symbol (cons (make-hash) (make-hash))))
         )
         (mergeHashTables (car prevs1.nexts1) (car prevs2.nexts2))
         (mergeHashTables (cdr prevs1.nexts1) (cdr prevs2.nexts2))
@@ -620,21 +619,28 @@
 
 
 ; ОБУЧАЕМСЯ
-; (define starts.order (cons (make-hash) (make-hash)))
-; (learn starts.order 4 (parseString (readFileAsString "freud.txt")))
-; (writeFile starts.order "backup.txt")
+; (define bad (cons (make-hash) (make-hash)))
+; (learn bad 2 (parseString (readFileAsString "_bad_tridon.txt")))
+; (learn bad 2 (parseString (readFileAsString "_bad_jackson.txt")))
+; (writeFile bad "backup_bad")
+
+; (define good (cons (make-hash) (make-hash)))
+; (learn good 4 (parseString (readFileAsString "_good_short_hilton.txt")))
+; (learn good 4 (parseString (readFileAsString "_normal_sadger.txt")))
+; (writeFile good "backup_good")
 
 ; ВСПОМИНАЕМ
-(define starts.order (readFileAsObject "backup.txt"))
+(define good (readFileAsObject "backup_good"))
+(define bad (readFileAsObject "backup_bad"))
 
-(visit-doctor 'stop 3 starts.order)
+; (define merged (cons (make-hash) (make-hash)))
+; (merge merged good)
+; (merge merged bad)
 
-; (merge starts.order data)
+(visit-doctor 'stop 3 bad)
 
-; pair: [
+
+; pair: (
 ;   starts: hash(n-1gram, count),
 ;   order: hash(n-1gram, [hashPrevs, hashNexts])
-; ]
-
-; NOTE: не работает с обратным порядком параметров. Скорее всего, при записи и чтении 
-; теряется мутабельность хэша.
+; )
