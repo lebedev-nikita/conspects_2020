@@ -335,10 +335,7 @@
 
 (define (parseString str)
   (define (removeBadChars str)
-    (regexp-replace* #rx"([&\\^\\*\\+\\=\\_\\|\\/\\%\\$\\#\\№\\@\\>\\<\\`\\~\\{\\}\"]|[[]|[]]|\n)" 
-      (regexp-replace* #rx"(\n)" str " ")
-      " "
-    )
+    (regexp-replace* #rx"([&\\^\\*\\+\\=\\_\\|\\/\\%\\$\\#\\№\\@\\>\\<\\`\\~\\{\\}\\(\\)\"]|[[]|[]]|\n)" str " " )
   )
   (define (addSpaces str)
     (regexp-replace* #rx"([.,:;«»()!?-])" str " \\1 ")
