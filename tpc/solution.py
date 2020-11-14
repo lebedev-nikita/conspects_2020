@@ -1,5 +1,7 @@
 from typing import List, Tuple
 import re
+import pymorphy2
+morph = pymorphy2.MorphAnalyzer()
 
 RU_MONTH_VALUES = {
     'января': '01',
@@ -43,11 +45,15 @@ class Solution:
             return '.'.join([('0' + ret.group(1))[-2:], ret.group(2), ret.group(3)])
 
     def getAuthority(self, docString):
-        # TODO
-        reAuthority = r'Принят.? (.*)\s'
+        reAuthority = r'((?:правительств|управлен|президент|конституционн|губернатор|глав).+?)(?:\.|\n|$)'
         ret = re.search(reAuthority, docString, re.I)
-        ret = ret.group(0) if ret else 'NULL'
-        return ret
+        ret = ret.group(1) if ret else 'NULL'
+        tokens = ret.lower().split()
+        tokens[0] = morph.parse(tokens[0])[0].normal_form
+        return ' '.join(tokens)
+        # return morph.parse(tokens[0])[0].normal_form
+        # normalizedTokens = map(lambda x: x[0].normal_form, map(morph.parse, tokens))
+        # return ' '.join(normalizedTokens)
 
     def getNumber(self, docString):
         reNumber = r'[№|N][ _]*(\d+(?:-?.*?))(?:\s|$|,)'
