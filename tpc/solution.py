@@ -32,7 +32,7 @@ class Solution:
         reType = r'федеральный закон|постановление|приказ|распоряжение|закон|указ'
         ret = re.search(reType, docString, re.I)
         ret = ret.group(0) if ret else 'NULL'
-        return ret
+        return ret.lower()
 
     def getDate(self, docString):
         reDate = r'\s(\d\d?)[ \.]+(.*?)[ \.]+(\d\d\d\d)'
@@ -62,10 +62,10 @@ class Solution:
         return ret
 
     def getName(self, docString):
-        reName = r'\n("?Об? .*?)\n'
-        ret = re.search(reName, docString, re.I)
+        reName = r'\n(Об? .*?)\n\n'
+        ret = re.search(reName, docString, re.I | re.S)
         ret = ret.group(1) if ret else 'NULL'
-        return ret
+        return ret.replace('\n', ' ')
 
     def predict(self, test: List[str]) -> List[dict]:
         # Do some predictions here and return results
@@ -76,6 +76,7 @@ class Solution:
                           "date": self.getDate(docString),
                           "number": self.getNumber(docString),
                           "authority": self.getAuthority(docString),
-                          "name": self.getName(docString)}
+                          "name": self.getName(docString),
+                          }
             results.append(prediction)
         return results
