@@ -4,11 +4,26 @@ const N = 5;
 const kRight = 1 / 2;
 
 class Node {
-  constructor(size, kRight) {
-    this.size = size;
+  constructor(i, j, n, matrix) {
+    if (0 == i && 0 == j) {
+      this.size = 1;
+    } else if (i == 0) {
+      this.size = matrix[0][j - 1].right;
+    } else if (j == 0) {
+      this.size = matrix[i - 1][0].bottom;
+    } else if (i == n - 1 && j == n - 1) {
+      this.size = matrix[i - 1][j].size + matrix[i][j - 1].size;
+    } else if (i == n - 1) {
+      this.size = matrix[i - 1][j].bottom + matrix[i][j - 1].size;
+    } else if (j == n - 1) {
+      this.size = matrix[i - 1][j].size + matrix[i][j - 1].right;
+    } else {
+      this.size = matrix[i - 1][j].bottom + matrix[i][j - 1].right;
+    }
+
     this.kRight = kRight;
-    this.right = size * kRight;
-    this.bottom = size * (1 - kRight);
+    this.right = this.size * this.kRight;
+    this.bottom = this.size * (1 - this.kRight);
   }
 }
 
@@ -19,28 +34,11 @@ class Matrix {
       this.inner[i] = new Array(n);
     }
 
-    this.inner[0][0] = new Node(1, kRight);
-
-    for (let i of range(1, n)) {
-      this.inner[0][i] = new Node(this.inner[0][i - 1].right, kRight);
-      this.inner[i][0] = new Node(this.inner[i - 1][0].bottom, kRight);
-    }
-
-    for (let i of range(1, n - 1)) {
-      for (let j of range(1, n - 1)) {
-        const nodeValue = this.inner[i][j - 1].right + this.inner[i - 1][j].bottom;
-        this.inner[i][j] = new Node(nodeValue, kRight);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        this.inner[i][j] = new Node(i, j, n, this.inner)
       }
     }
-
-    for (let i of range(1, n - 1)) {
-      const bottomValue = this.inner[n - 1][i - 1].size + this.inner[n - 2][i].bottom;
-      const rightValue = this.inner[i - 1][n - 1].size + this.inner[i][n - 2].right;
-      this.inner[n - 1][i] = new Node(bottomValue, kRight);
-      this.inner[i][n - 1] = new Node(rightValue, kRight);
-    }
-    const lastValue = this.inner[n - 1][n - 2].size + this.inner[n - 2][n - 1].size;
-    this.inner[n - 1][n - 1] = new Node(lastValue, kRight);
   }
 
   map(fun) {
