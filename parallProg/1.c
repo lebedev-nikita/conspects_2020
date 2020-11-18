@@ -27,10 +27,11 @@ int main(int argc, char **argv)
     }
     for (int i = 0; i < NUM_CHUNKS / 2; i++)
     {
+      printf("%3d: start\n", world_rank);
       MPI_Isend(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank + 1, i, MPI_COMM_WORLD, &req[0]);
       MPI_Isend(msg + (i + NUM_CHUNKS / 2) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank + MATRIX_N, i + NUM_CHUNKS / 2, MPI_COMM_WORLD, &req[1]);
       MPI_Waitall(2, req, NULL);
-      printf("%d\n", world_rank);
+      printf("%3d: end\n", world_rank);
     }
   }
   // правый нижний угол
@@ -39,10 +40,11 @@ int main(int argc, char **argv)
     char msg[MSG_LENGTH];
     for (int i = 0; i < NUM_CHUNKS / 2; i++)
     {
-      MPI_Irecv(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - MATRIX_N, i, MPI_COMM_WORLD, NULL, req[0]);
-      MPI_Irecv(msg + (i + NUM_CHUNKS / 2) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - 1, (i + NUM_CHUNKS / 2), MPI_COMM_WORLD, NULL, req[1]);
+      printf("%3d: start\n", world_rank);
+      MPI_Irecv(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - MATRIX_N, i, MPI_COMM_WORLD, &req[0]);
+      MPI_Irecv(msg + (i + NUM_CHUNKS / 2) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - 1, (i + NUM_CHUNKS / 2), MPI_COMM_WORLD, &req[1]);
       MPI_Waitall(2, req, NULL);
-      printf("%d\n", world_rank);
+      printf("%3d: end\n", world_rank);
     }
     printf("DONE!\n");
   }
@@ -51,40 +53,47 @@ int main(int argc, char **argv)
     char chunk[2 * CHUNK_LENGTH];
     int source;
     int destination;
+    int tag;
 
     // правый верхний угол
     if (world_rank == MATRIX_N - 1)
     {
+      tag = 0;
       source = world_rank - 1;
       destination = world_rank + MATRIX_N;
     }
     // левый нижний угол
-    else if (world_rank % MATRIX_N == 0)
+    else if (world_rank == MATRIX_N * (MATRIX_N - 1))
     {
+      tag = 1;
       source = world_rank - MATRIX_N;
       destination = world_rank + 1;
     }
     // верхняя горизонталь
-    if (world_rank < MATRIX_N - 1)
+    else if (world_rank < MATRIX_N - 1)
     {
+      tag = 0;
       source = world_rank - 1;
       destination = world_rank + 1;
     }
     // нижняя горизонталь
-    if (world_rank > MATRIX_N * (MATRIX_N - 1) && world_rank < MATRIX_N * MATRIX_N - 1)
+    else if (world_rank > MATRIX_N * (MATRIX_N - 1) && world_rank < MATRIX_N * MATRIX_N - 1)
     {
+      tag = 1;
       source = world_rank - 1;
       destination = world_rank + 1;
     }
     // правая вертикаль
     else if (world_rank % MATRIX_N == MATRIX_N - 1)
     {
+      tag = 0;
       source = world_rank - MATRIX_N;
       destination = world_rank + MATRIX_N;
     }
     // левая вертикаль
     else if (world_rank % MATRIX_N == 0)
     {
+      tag = 1;
       source = world_rank - MATRIX_N;
       destination = world_rank + MATRIX_N;
     }
@@ -96,21 +105,22 @@ int main(int argc, char **argv)
 
     for (int i = 0; i <= NUM_CHUNKS; i++)
     {
+      printf("%3d: start\n", world_rank);
       if (i == 0)
       {
-        MPI_Recv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, i, MPI_COMM_WORLD, NULL);
+        MPI_Recv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, tag, MPI_COMM_WORLD, NULL);
       }
       else if (i == NUM_CHUNKS)
       {
-        MPI_Send(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, i - 1, MPI_COMM_WORLD);
+        MPI_Send(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, tag, MPI_COMM_WORLD);
       }
       else
       {
-        MPI_Isend(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, i - 1, MPI_COMM_WORLD, &req[0]);
-        MPI_Irecv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, i, MPI_COMM_WORLD, &req[1]);
+        MPI_Isend(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, tag, MPI_COMM_WORLD, &req[0]);
+        MPI_Irecv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, tag, MPI_COMM_WORLD, &req[1]);
         MPI_Waitall(2, req, NULL);
       }
-      printf("%d\n", world_rank);
+      printf("%3d: end\n", world_rank);
     }
   }
 
