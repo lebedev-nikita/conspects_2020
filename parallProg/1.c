@@ -15,6 +15,8 @@ int main(int argc, char **argv)
   int world_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+  MPI_Request req[2];
+
   // левый верхний угол
   if (world_rank == 0) 
   {
@@ -82,11 +84,9 @@ int main(int argc, char **argv)
       }
       else
       {
-        MPI_Request isendReq, irecvReq;                                                                                        
-        MPI_Isend(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, i - 1, MPI_COMM_WORLD, &isendReq);
-        MPI_Irecv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, i, MPI_COMM_WORLD, &irecvReq);               
-        MPI_Wait(&isendReq, NULL);                                                                                             
-        MPI_Wait(&irecvReq, NULL);                                                                                             
+        MPI_Isend(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, i - 1, MPI_COMM_WORLD, &req[0]);
+        MPI_Irecv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, i, MPI_COMM_WORLD, &req[1]);               
+        MPI_Waitall( 2 , req , NULL);
       }
       printf("%d\n", world_rank);
     }
