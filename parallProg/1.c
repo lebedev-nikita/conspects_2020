@@ -25,11 +25,11 @@ int main(int argc, char **argv)
     {
       msg[i] = 'a' + i % 26;
     }
-    for (int i = 0; i < NUM_CHUNKS / 2; i++)
+    for (int i = 0; i < NUM_CHUNKS; i += 2)
     {
       printf("%3d: start\n", world_rank);
-      MPI_Isend(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank + 1, i, MPI_COMM_WORLD, &req[0]);
-      MPI_Isend(msg + (i + NUM_CHUNKS / 2) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank + MATRIX_N, i + NUM_CHUNKS / 2, MPI_COMM_WORLD, &req[1]);
+      MPI_Isend(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank + 1, 0, MPI_COMM_WORLD, &req[0]);
+      MPI_Isend(msg + (i + 1) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank + MATRIX_N, 1, MPI_COMM_WORLD, &req[1]);
       MPI_Waitall(2, req, NULL);
       printf("%3d: end\n", world_rank);
     }
@@ -38,11 +38,11 @@ int main(int argc, char **argv)
   else if (world_rank == MATRIX_N * MATRIX_N - 1)
   {
     char msg[MSG_LENGTH];
-    for (int i = 0; i < NUM_CHUNKS / 2; i++)
+    for (int i = 0; i < NUM_CHUNKS; i += 2)
     {
       printf("%3d: start\n", world_rank);
-      MPI_Irecv(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - MATRIX_N, i, MPI_COMM_WORLD, &req[0]);
-      MPI_Irecv(msg + (i + NUM_CHUNKS / 2) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - 1, (i + NUM_CHUNKS / 2), MPI_COMM_WORLD, &req[1]);
+      MPI_Irecv(msg + i * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - MATRIX_N, 0, MPI_COMM_WORLD, &req[0]);
+      MPI_Irecv(msg + (i + 1) * CHUNK_LENGTH, CHUNK_LENGTH, MPI_BYTE, world_rank - 1, 1, MPI_COMM_WORLD, &req[1]);
       MPI_Waitall(2, req, NULL);
       printf("%3d: end\n", world_rank);
     }
@@ -103,14 +103,14 @@ int main(int argc, char **argv)
       goto finalize;
     }
 
-    for (int i = 0; i <= NUM_CHUNKS; i++)
+    for (int i = 0; i <= NUM_CHUNKS / 2; i++)
     {
       printf("%3d: start\n", world_rank);
       if (i == 0)
       {
         MPI_Recv(chunk + CHUNK_LENGTH * (i % 2), CHUNK_LENGTH, MPI_BYTE, source, tag, MPI_COMM_WORLD, NULL);
       }
-      else if (i == NUM_CHUNKS)
+      else if (i == NUM_CHUNKS / 2)
       {
         MPI_Send(chunk + CHUNK_LENGTH * ((i - 1) % 2), CHUNK_LENGTH, MPI_BYTE, destination, tag, MPI_COMM_WORLD);
       }
