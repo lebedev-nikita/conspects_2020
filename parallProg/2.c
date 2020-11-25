@@ -21,7 +21,7 @@ void bench_timer_print() {
   printf("Time in seconds = %0.6lf\n", bench_t_end - bench_t_start);
 }
 
-void save_progress(char *fileName, int t, int tmax, int nx, int ny,
+void save_progress(char *fileName, int t, int tmax, int nx, int ny, int nrows,
                    float ex[nrows][ny], float ey[nrows + 2][ny],
                    float hz[nrows + 2][ny], float _fict_[tmax]) 
 {
@@ -31,31 +31,62 @@ void save_progress(char *fileName, int t, int tmax, int nx, int ny,
   fprintf(f, "%d\n", tmax);
   fprintf(f, "%d\n", nx);
   fprintf(f, "%d\n", ny);
+  fprintf(f, "%d\n", nrows);
 
   for (int i = 0; i < nrows; i++) {
     for (int j = 0; j < ny; j++)
-      fprintf(f, "%3.2f ", ex[i][j]);
+      fprintf(f, "%f ", ex[i][j]);
     fputc('\n', f);
   }
   fputc('\n', f);
 
   for (int i = 0; i < nrows + 2; i++) {
     for (int j = 0; j < ny; j++)
-      fprintf(f, "%3.2f ", ey[i][j]);
+      fprintf(f, "%f ", ey[i][j]);
     fputc('\n', f);
   }
   fputc('\n', f);
 
   for (int i = 0; i < nrows + 2; i++) {
     for (int j = 0; j < ny; j++)
-      fprintf(f, "%3.2f ", hz[i][j]);
+      fprintf(f, "%f ", hz[i][j]);
     fputc('\n', f);
   }
   fputc('\n', f);
 
   for (int i = 0; i < tmax + 2; i++)
-    fprintf(f, "%3.2f ", _fict_[i]);
+    fprintf(f, "%f ", _fict_[i]);
   fputc('\n', f);
+
+  fclose(f);
+}
+
+void restore_progress(char *fileName, int* t, int* tmax, int* nx, int* ny, int* nrows,
+                   float ex[*nrows][*ny], float ey[*nrows + 2][*ny],
+                   float hz[*nrows + 2][*ny], float _fict_[*tmax]) 
+{
+  FILE *f = fopen(fileName, "r");
+
+  fscanf(f, "%d\n", t);
+  fscanf(f, "%d\n", tmax);
+  fscanf(f, "%d\n", nx);
+  fscanf(f, "%d\n", ny);
+  fscanf(f, "%d\n", nrows);
+
+  for (int i = 0; i < *nrows; i++)
+    for (int j = 0; j < *ny; j++)
+      fscanf(f, "%f", &ex[i][j]);
+
+  for (int i = 0; i < *nrows + 2; i++)
+    for (int j = 0; j < *ny; j++)
+      fscanf(f, "%f", &ey[i][j]);
+
+  for (int i = 0; i < *nrows + 2; i++)
+    for (int j = 0; j < *ny; j++)
+      fscanf(f, "%f", &hz[i][j]);
+
+  for (int i = 0; i < *tmax + 2; i++)
+    fscanf(f, "%f", &_fict_[i]);
 
   fclose(f);
 }
@@ -97,8 +128,6 @@ static void kernel_fdtd_2d(int tmax, int nx, int ny, float ex[nrows][ny],
   sprintf(fileName, "./output%d.txt", rank);
 
   for (t = 0; t < tmax; t++) {
-    // if (t == 0) 
-    //   save_progress(fileName, t, tmax, nx, ny, ex, ey, hz, _fict_);
     // начат участок ey
     if (rank == 0)
       for (j = 0; j < ny; j++)
@@ -208,7 +237,7 @@ static void kernel_fdtd_2d(int tmax, int nx, int ny, float ex[nrows][ny],
 
     // завершили синхронизацию hz
     if (t == tmax - 1)
-      save_progress(fileName, t, tmax, nx, ny, ex, ey, hz, _fict_);
+      save_progress(fileName, t, tmax, nx, ny, nrows, ex, ey, hz, _fict_);
   }
 }
 
@@ -239,8 +268,7 @@ int main(int argc, char **argv) {
 
   kernel_fdtd_2d(tmax, nx, ny, *ex, *ey, *hz, *_fict_); // вычисления
 
-  MPI_Barrier(
-      MPI_COMM_WORLD); // ждем, чтобы измерения времени были максимально точными
+  MPI_Barrier(MPI_COMM_WORLD); // ждем, чтобы измерения времени были максимально точными
 
   if (rank == leader_rank) {
     bench_timer_stop();
