@@ -513,6 +513,8 @@
 
 
 (define (generateAnswer starts.order userResponse)
+  ; Функция wantEnd старается выбрать слово, являющееся концом предложения. 
+  ; Если это не возможно, то выбирает любое слово с учетом веса
   (define (wantEnd hashTable)
     (let 
       ((a (or
@@ -523,8 +525,8 @@
       (or a (pickRandomKeyFromHT hashTable))
     )
   )
+  ; Функция forward генерирует ответ прямым способом
   (define (forward order n-1gram lenLeft)
-    ; (println n-1gram)
     (let* 
       (
         (nexts (cdr (hash-ref order n-1gram "nothing")))
@@ -539,6 +541,7 @@
       )
     )
   )
+  ; Функция backward генерирует ответ обратным способом
   (define (backward order st lenLeft)
     (let* 
       (
@@ -550,10 +553,14 @@
       )
       (if (isEnd? prev)
         st
-        (append (backward order (cons prev (drop-right st 1)) (- lenLeft 1)) (last-pair st))
+        (append 
+          (backward order (cons prev (drop-right st 1)) (- lenLeft 1)) 
+          (last-pair st)
+        )
       )
     )
   )
+  ; Функция mixed генерирует ответ смешанным способом с использованием forward и backward
   (define (mixed order st lenLeft)
     (let* 
       (
@@ -564,6 +571,7 @@
       (append pre st post)
     )
   )
+
   ; (define (slidingWindow lst windowLength params fun)
   (let* 
     (
@@ -576,9 +584,12 @@
           #f
         )
       )))
+      ; lenLeft - длина, после которой генератор будет стремиться завершить предложение
       (lenLeft (random 15))
     )
-    ; (println stMatch); NOTE: вывод совпадения n-1граммы из пользовательского ввода с текстом
+    ; Если в пользовательской фразе есть n-1-грамма, которая встречалась в обучающей выборке
+    ; то генерируем ответ смешанным способом, отталкиваясь от этой n-1-граммы
+    ; иначе генерируем ответ прямым способом
     (if stMatch
       (mixed order stMatch lenLeft)
       (forward order (pickRandomKeyFromHT starts) (* 2 lenLeft))
