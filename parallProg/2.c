@@ -4,7 +4,8 @@
 double bench_t_start, bench_t_end;
 int numtasks, rank;
 int startrow, lastrow, nrows;
-int *procsAlive, nextRank, prevRank;
+int *procsAlive, numProcsAlive;
+int nextRank, prevRank, workRank;
 
 // в этих матрицах хранится чекпоинт
 float cp_ex[NX][NY];
@@ -55,16 +56,16 @@ static void reinit(
   if (*_fict_ != NULL) free(*_fict_);
 
   // считаем живые процессы и устанавливаем prevRank, nextRank
-  int numProcsAlive = 0;
+  numProcsAlive = 0;
   int setPrevRank = 0;
   int setNextRank = 0;
-  int thisRankOfAlive = 0;
+  workRank = 0;
 
   for (int i = 0; i < numtasks; i++) {
     if (procsAlive[i]) { 
       numProcsAlive++;
       if (i < rank) {
-        thisRankOfAlive++;
+        workRank++;
         prevRank = i;
         setPrevRank = 1;
       }
@@ -77,8 +78,8 @@ static void reinit(
   if (!setPrevRank) prevRank = -1;
   if (!setNextRank) nextRank = -1;
 
-  startrow = (thisRankOfAlive * NX) / numProcsAlive;
-  lastrow = ((thisRankOfAlive + 1) * NX / numProcsAlive) - 1;
+  startrow = (workRank * NX) / numProcsAlive;
+  lastrow = ((workRank + 1) * NX / numProcsAlive) - 1;
   nrows = lastrow - startrow + 1;
 
   *ex = malloc((nrows) * NY * sizeof(float));
@@ -106,31 +107,6 @@ static void reinit(
     (**hz)[nrows + 1][j] = cp_hz[lastrow + 1][j];
   }
 }
-// /* Каждый процесс работает только со своей частью матрицы. */
-// static void init_array(
-//   // TODO: копировать данные из чекпоинта, заполнять nrows;
-//   float ex[nrows][NY], // ex не нужны теневые грани
-//   float ey[nrows + 2][NY], // ey и hz нужны теневые грани
-//   float hz[nrows + 2][NY], //
-//   float _fict_[TMAX]
-// ) {
-//   int i, j;
-//   for (i = 0; i < TMAX; i++)
-//     _fict_[i] = (float)i;
-//   for (i = 1; i <= nrows; i++)
-//     for (j = 0; j < NY; j++) {
-//       ex[i - 1][j] = ((float)(startrow + i - 1) * (j + 1)) / NX;
-//       ey[i][j] = ((float)(startrow + i - 1) * (j + 2)) / NY;
-//       hz[i][j] = ((float)(startrow + i - 1) * (j + 3)) / NX;
-//     }
-//   for (j = 0; j < NY; j++) // инициализируем теневые грани
-//   {
-//     ey[0][j] = ((float)(startrow + 0 - 1) * (j + 2)) / NY;
-//     hz[0][j] = ((float)(startrow + 0 - 1) * (j + 3)) / NX;
-//     ey[nrows + 1][j] = ((float)(startrow + nrows + 1 - 1) * (j + 2)) / NY;
-//     hz[nrows + 1][j] = ((float)(startrow + nrows + 1 - 1) * (j + 3)) / NX;
-//   }
-// }
 
 // основные вычисления происходят здесь
 static void kernel_fdtd_2d(float ex[nrows][NY],
@@ -166,36 +142,36 @@ static void kernel_fdtd_2d(float ex[nrows][NY],
     // завершен участок ex
 
     // начинаем синхронизировать ey
-    if (rank != 0) {
-      MPI_Irecv(&ey[0][0], NY, MPI_FLOAT, rank - 1, 'e' + 'y' + 1,
+    if (workRank != 0) {
+      MPI_Irecv(&ey[0][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
-    if (rank != 0) {
-      MPI_Isend(&ey[1][0], NY, MPI_FLOAT, rank - 1, 'e' + 'y' + 2,
+    if (workRank != 0) {
+      MPI_Isend(&ey[1][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
-    if (rank != numtasks - 1) {
-      MPI_Isend(&ey[nrows][0], NY, MPI_FLOAT, rank + 1, 'e' + 'y' + 1,
+    if (workRank != numProcsAlive - 1) {
+      MPI_Isend(&ey[nrows][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
-    if (rank != numtasks - 1) {
-      MPI_Irecv(&ey[nrows + 1][0], NY, MPI_FLOAT, rank + 1, 'e' + 'y' + 2,
+    if (workRank != numProcsAlive - 1) {
+      MPI_Irecv(&ey[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
 
     II = 4;
     shift = 0;
-    if (numtasks - 1 == 0) {
+    if (numProcsAlive - 1 == 0) {
       II = 0;
       shift = 0;
     } // если существует всего 1 MPI процесс
-    else if (rank == 0) {
+    else if (workRank == 0) {
       II = 2;
       shift = 2;
-    } else if (rank == numtasks - 1) {
+    } else if (workRank == numProcsAlive - 1) {
       II = 2;
       shift = 0;
     }
@@ -208,7 +184,7 @@ static void kernel_fdtd_2d(float ex[nrows][NY],
                                       ey[i + 1][j] - ey[i][j]);
     }
 
-    if (rank != numtasks - 1) {
+    if (workRank != numProcsAlive - 1) {
       for (j = 0; j < NY - 1; j++)
         hz[nrows][j] =
             hz[nrows][j] - 0.7f * (ex[nrows - 1][j + 1] - ex[nrows - 1][j] +
@@ -217,41 +193,40 @@ static void kernel_fdtd_2d(float ex[nrows][NY],
     // завершен участок hz
 
     // начинаем синхронизацию hz
-    if (rank != 0) {
-      MPI_Irecv(&hz[0][0], NY, MPI_FLOAT, rank - 1, 'h' + 'z' + 1,
+    if (workRank != 0) {
+      MPI_Irecv(&hz[0][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
-    if (rank != 0) {
-      MPI_Isend(&hz[1][0], NY, MPI_FLOAT, rank - 1, 'h' + 'z' + 2,
+    if (workRank != 0) {
+      MPI_Isend(&hz[1][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
-    if (rank != numtasks - 1) {
-      MPI_Isend(&hz[nrows][0], NY, MPI_FLOAT, rank + 1, 'h' + 'z' + 1,
+    if (workRank != numProcsAlive - 1) {
+      MPI_Isend(&hz[nrows][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
-    if (rank != numtasks - 1) {
-      MPI_Irecv(&hz[nrows + 1][0], NY, MPI_FLOAT, rank + 1, 'h' + 'z' + 2,
+    if (workRank != numProcsAlive - 1) {
+      MPI_Irecv(&hz[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
 
     II = 2;
     shift = 0;
-    if (numtasks - 1 == 0) {
+    if (numProcsAlive - 1 == 0) {
       II = 0;
       shift = 0;
     } // если существует всего 1 MPI процесс
-    else if (rank == 0) {
+    else if (workRank == 0) {
       II = 2;
       shift = 2;
-    } else if (rank == numtasks - 1) {
+    } else if (workRank == numProcsAlive - 1) {
       II = 2;
       shift = 0;
     }
     MPI_Waitall(II, &req[shift], &status[0]);
-
     // завершили синхронизацию hz
   }
 }
@@ -265,10 +240,6 @@ int main(int argc, char **argv) {
 
   procsAlive = malloc(numtasks * sizeof(int));
   for (int i = 0; i < numtasks; i++) procsAlive[i] = 1;
-
-  // startrow = (rank * NX) / numtasks;
-  // lastrow = ((rank + 1) * NX / numtasks) - 1;
-  // nrows = lastrow - startrow + 1;
 
   float(*ex)[nrows][NY] = NULL;
   float(*ey)[nrows + 2][NY] = NULL;
