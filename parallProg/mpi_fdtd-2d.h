@@ -42,5 +42,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <mpi.h>
+#include "/usr/local/include/mpi.h"
 #include <omp.h>
 # endif
