@@ -109,10 +109,10 @@ static void reinit(
 }
 
 // основные вычисления происходят здесь
-static void kernel_fdtd_2d(float ex[nrows][NY],
-                           float ey[nrows + 2][NY], 
-                           float hz[nrows + 2][NY],
-                           float _fict_[TMAX]
+static void kernel_fdtd_2d(float (**ex)[nrows][NY],
+                           float (**ey)[nrows + 2][NY], 
+                           float (**hz)[nrows + 2][NY],
+                           float (**_fict_)[TMAX]
 ) {
   MPI_Request req[4];
   MPI_Status status[4];
@@ -122,43 +122,43 @@ static void kernel_fdtd_2d(float ex[nrows][NY],
 
   for (t = 0; t < TMAX; t++) {
     // начат участок ey
-    if (rank == 0)
+    if (workRank == 0)
       for (j = 0; j < NY; j++)
-        ey[1][j] = _fict_[t];
+        (**ey)[1][j] = (**_fict_)[t];
     else
       for (j = 0; j < NY; j++)
-        ey[1][j] = ey[1][j] - 0.5f * (hz[1][j] - hz[0][j]);
+        (**ey)[1][j] = (**ey)[1][j] - 0.5f * ((**hz)[1][j] - (**hz)[0][j]);
 
     for (i = 2; i <= nrows; i++) {
       for (j = 0; j < NY; j++)
-        ey[i][j] = ey[i][j] - 0.5f * (hz[i][j] - hz[i - 1][j]);
+        (**ey)[i][j] = (**ey)[i][j] - 0.5f * ((**hz)[i][j] - (**hz)[i - 1][j]);
     }
     // завершен участок ey
     // начат участок ex
     for (i = 0; i < nrows; i++) { // ex не имеет теневых граней
       for (j = 1; j < NY; j++)
-        ex[i][j] = ex[i][j] - 0.5f * (hz[i + 1][j] - hz[i + 1][j - 1]);
+        (**ex)[i][j] = (**ex)[i][j] - 0.5f * ((**hz)[i + 1][j] - (**hz)[i + 1][j - 1]);
     }
     // завершен участок ex
 
     // начинаем синхронизировать ey
     if (workRank != 0) {
-      MPI_Irecv(&ey[0][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 1,
+      MPI_Irecv(*ey[0][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
     if (workRank != 0) {
-      MPI_Isend(&ey[1][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 2,
+      MPI_Isend(*ey[1][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
     if (workRank != numProcsAlive - 1) {
-      MPI_Isend(&ey[nrows][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 1,
+      MPI_Isend(*ey[nrows][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
     if (workRank != numProcsAlive - 1) {
-      MPI_Irecv(&ey[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 2,
+      MPI_Irecv(*ey[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
 
@@ -180,15 +180,18 @@ static void kernel_fdtd_2d(float ex[nrows][NY],
     // начат участок hz
     for (i = 1; i <= nrows - 1; i++) {
       for (j = 0; j < NY - 1; j++)
-        hz[i][j] = hz[i][j] - 0.7f * (ex[i - 1][j + 1] - ex[i - 1][j] +
-                                      ey[i + 1][j] - ey[i][j]);
+        (**hz)[i][j] = (**hz)[i][j] - 0.7f * (ex[i - 1][j + 1] 
+                                    - ex[i - 1][j] 
+                                    + ey[i + 1][j] 
+                                    - ey[i][j]);
     }
 
     if (workRank != numProcsAlive - 1) {
       for (j = 0; j < NY - 1; j++)
-        hz[nrows][j] =
-            hz[nrows][j] - 0.7f * (ex[nrows - 1][j + 1] - ex[nrows - 1][j] +
-                                   ey[nrows + 1][j] - ey[i][j]);
+        (**hz)[nrows][j] = (**hz)[nrows][j] - 0.7f * (ex[nrows - 1][j + 1] 
+                                            - ex[nrows - 1][j] 
+                                            + ey[nrows + 1][j] 
+                                            - ey[i][j]);
     }
     // завершен участок hz
 
@@ -252,7 +255,7 @@ int main(int argc, char **argv) {
 
   if (rank == leader_rank) bench_timer_start();
 
-  kernel_fdtd_2d(*ex, *ey, *hz, *_fict_); // вычисления
+  kernel_fdtd_2d(&ex, &ey, &hz, &_fict_); // вычисления
 
   MPI_Barrier(MPI_COMM_WORLD); // ждем, чтобы измерения времени были максимально точными
 
