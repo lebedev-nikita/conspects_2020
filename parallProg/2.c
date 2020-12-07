@@ -1,8 +1,10 @@
 #include "mpi_fdtd-2d.h"
+#include <stdlib.h>
 
 double bench_t_start, bench_t_end;
 int numtasks, rank;
 int startrow, lastrow, nrows;
+int *procsAlive, nextRank, prevRank;
 
 // в этих матрицах хранится чекпоинт
 float cp_ex[NX][NY];
@@ -40,30 +42,95 @@ static void init_checkpoint() {
 }
 
 /* Каждый процесс работает только со своей частью матрицы. */
-static void init_array(
+static void reinit(
   // TODO: копировать данные из чекпоинта, заполнять nrows;
-  float ex[nrows][NY], // ex не нужны теневые грани
-  float ey[nrows + 2][NY], // ey и hz нужны теневые грани
-  float hz[nrows + 2][NY], //
-  float _fict_[TMAX]
+  float (**ex)[nrows][NY], // ex не нужны теневые грани
+  float (**ey)[nrows + 2][NY], // ey и hz нужны теневые грани
+  float (**hz)[nrows + 2][NY], //
+  float (**_fict_)[TMAX]
 ) {
+  if (*ex != NULL) free(*ex);
+  if (*ey != NULL) free(*ey);
+  if (*hz != NULL) free(*hz);
+  if (*_fict_ != NULL) free(*_fict_);
+
+  // считаем живые процессы и устанавливаем prevRank, nextRank
+  int numProcsAlive = 0;
+  int setPrevRank = 0;
+  int setNextRank = 0;
+  int thisRankOfAlive = 0;
+
+  for (int i = 0; i < numtasks; i++) {
+    if (procsAlive[i]) { 
+      numProcsAlive++;
+      if (i < rank) {
+        thisRankOfAlive++;
+        prevRank = i;
+        setPrevRank = 1;
+      }
+      if (i > rank && !setNextRank) {
+        nextRank = i;
+        setNextRank = 1;
+      }
+    }
+  }
+  if (!setPrevRank) prevRank = -1;
+  if (!setNextRank) nextRank = -1;
+
+  startrow = (thisRankOfAlive * NX) / numProcsAlive;
+  lastrow = ((thisRankOfAlive + 1) * NX / numProcsAlive) - 1;
+  nrows = lastrow - startrow + 1;
+
+  *ex = malloc((nrows) * NY * sizeof(float));
+  *ey = malloc((nrows + 2) * NY * sizeof(float));
+  *hz = malloc((nrows + 2) * NY * sizeof(float));
+  *_fict_  = malloc(TMAX * sizeof(float));
+
+  // с этого момента мы должны копиросать чекпоинт в локальные матрицы
   int i, j;
   for (i = 0; i < TMAX; i++)
-    _fict_[i] = (float)i;
+    (**_fict_)[i] = cp__fict_[i];
+
   for (i = 1; i <= nrows; i++)
     for (j = 0; j < NY; j++) {
-      ex[i - 1][j] = ((float)(startrow + i - 1) * (j + 1)) / NX;
-      ey[i][j] = ((float)(startrow + i - 1) * (j + 2)) / NY;
-      hz[i][j] = ((float)(startrow + i - 1) * (j + 3)) / NX;
+      (**ex)[i - 1][j] = cp_ex[startrow + (i - 1)][j];
+      (**ey)[i][j] = cp_ey[startrow + (i - 1)][j];
+      (**hz)[i][j] = cp_hz[startrow + (i - 1)][j];
     }
+
   for (j = 0; j < NY; j++) // инициализируем теневые грани
   {
-    ey[0][j] = ((float)(startrow + 0 - 1) * (j + 2)) / NY;
-    hz[0][j] = ((float)(startrow + 0 - 1) * (j + 3)) / NX;
-    ey[nrows + 1][j] = ((float)(startrow + nrows + 1 - 1) * (j + 2)) / NY;
-    hz[nrows + 1][j] = ((float)(startrow + nrows + 1 - 1) * (j + 3)) / NX;
+    (**ey)[0][j] = cp_ey[startrow - 1][j];
+    (**hz)[0][j] = cp_hz[startrow - 1][j];
+    (**ey)[nrows + 1][j] = cp_ey[lastrow + 1][j];
+    (**hz)[nrows + 1][j] = cp_hz[lastrow + 1][j];
   }
 }
+// /* Каждый процесс работает только со своей частью матрицы. */
+// static void init_array(
+//   // TODO: копировать данные из чекпоинта, заполнять nrows;
+//   float ex[nrows][NY], // ex не нужны теневые грани
+//   float ey[nrows + 2][NY], // ey и hz нужны теневые грани
+//   float hz[nrows + 2][NY], //
+//   float _fict_[TMAX]
+// ) {
+//   int i, j;
+//   for (i = 0; i < TMAX; i++)
+//     _fict_[i] = (float)i;
+//   for (i = 1; i <= nrows; i++)
+//     for (j = 0; j < NY; j++) {
+//       ex[i - 1][j] = ((float)(startrow + i - 1) * (j + 1)) / NX;
+//       ey[i][j] = ((float)(startrow + i - 1) * (j + 2)) / NY;
+//       hz[i][j] = ((float)(startrow + i - 1) * (j + 3)) / NX;
+//     }
+//   for (j = 0; j < NY; j++) // инициализируем теневые грани
+//   {
+//     ey[0][j] = ((float)(startrow + 0 - 1) * (j + 2)) / NY;
+//     hz[0][j] = ((float)(startrow + 0 - 1) * (j + 3)) / NX;
+//     ey[nrows + 1][j] = ((float)(startrow + nrows + 1 - 1) * (j + 2)) / NY;
+//     hz[nrows + 1][j] = ((float)(startrow + nrows + 1 - 1) * (j + 3)) / NX;
+//   }
+// }
 
 // основные вычисления происходят здесь
 static void kernel_fdtd_2d(float ex[nrows][NY],
@@ -76,8 +143,6 @@ static void kernel_fdtd_2d(float ex[nrows][NY],
   int t, i, j;
   int nExchanges, n;
   int II, shift;
-  char fileName[20];
-  sprintf(fileName, "./output%d.txt", rank);
 
   for (t = 0; t < TMAX; t++) {
     // начат участок ey
@@ -198,19 +263,23 @@ int main(int argc, char **argv) {
   MPI_Barrier(MPI_COMM_WORLD);
   int leader_rank = 0;
 
-  startrow = (rank * NX) / numtasks;
-  lastrow = ((rank + 1) * NX / numtasks) - 1;
-  nrows = lastrow - startrow + 1;
+  procsAlive = malloc(numtasks * sizeof(int));
+  for (int i = 0; i < numtasks; i++) procsAlive[i] = 1;
 
-  float(*ex)[nrows][NY] = malloc((nrows)*NY * sizeof(float));
-  float(*ey)[nrows + 2][NY] = malloc((nrows + 2) * NY * sizeof(float));
-  float(*hz)[nrows + 2][NY] = malloc((nrows + 2) * NY * sizeof(float));
-  float(*_fict_)[TMAX] = malloc(TMAX * sizeof(float));
+  // startrow = (rank * NX) / numtasks;
+  // lastrow = ((rank + 1) * NX / numtasks) - 1;
+  // nrows = lastrow - startrow + 1;
 
-  init_array(*ex, *ey, *hz, *_fict_);
+  float(*ex)[nrows][NY] = NULL;
+  float(*ey)[nrows + 2][NY] = NULL;
+  float(*hz)[nrows + 2][NY] = NULL;
+  float(*_fict_)[TMAX] = NULL;
 
-  if (rank == leader_rank)
-    bench_timer_start();
+  init_checkpoint();
+  reinit(&ex, &ey, &hz, &_fict_);
+  if (rank == 0) printf("REINIT DONE\n");
+
+  if (rank == leader_rank) bench_timer_start();
 
   kernel_fdtd_2d(*ex, *ey, *hz, *_fict_); // вычисления
 
@@ -225,6 +294,7 @@ int main(int argc, char **argv) {
   free((void *)ey);
   free((void *)hz);
   free((void *)_fict_);
+  free(procsAlive);
 
   MPI_Finalize();
   return 0;
