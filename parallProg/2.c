@@ -63,9 +63,9 @@ void sync_checkpoint(int t,
 
   if (rank == masterProc) {
     // копируем свои данные в матрицу
-    memcpy(cp_ex, **ex, nrows * NY * sizeof(float));
-    memcpy(cp_ey, **ey + NY, nrows * NY * sizeof(float));
-    memcpy(cp_hz, **hz + NY, nrows * NY * sizeof(float));
+    memcpy(cp_ex, &(**ex)[0][0], nrows * NY * sizeof(float));
+    memcpy(cp_ey, &(**ey)[1][0], nrows * NY * sizeof(float));
+    memcpy(cp_hz, &(**hz)[1][0], nrows * NY * sizeof(float));
     // _fict_ не изменяется и имеется в чекпоинте с самой ее инициализации
 
     MPI_Request req[3 * (numProcsAlive - 1)];
@@ -74,19 +74,18 @@ void sync_checkpoint(int t,
     int reqI = 0;
     for (int i = masterProc + 1; i < numProcsAlive; i++) {
       if (procsAlive[i]) {
-        MPI_Irecv(cp_ex + nrows * NY * offset, nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
-        MPI_Irecv(cp_ey + nrows * NY * offset, nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
-        MPI_Irecv(cp_hz + nrows * NY * offset, nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(&cp_ex[nrows * offset][0], nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(&cp_ey[nrows * offset][0], nrows * NY, MPI_FLOAT, i, 2, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(&cp_hz[nrows * offset][0], nrows * NY, MPI_FLOAT, i, 3, MPI_COMM_WORLD, &req[reqI++]);
         offset++;
       }
-      MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
     }
+    MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
   } else {
-    // printf("rank: %d\n", rank);
     MPI_Request req[3];
-    MPI_Isend(**ex, nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[0]);
-    MPI_Isend(**ey + NY, nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[1]);
-    MPI_Isend(**hz + NY, nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
+    MPI_Isend(&(**ex)[0][0], nrows * NY, MPI_INT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
+    MPI_Isend(&(**ey)[1][0], nrows * NY, MPI_INT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
+    MPI_Isend(&(**hz)[1][0], nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
     MPI_Waitall(3, req, NULL);
   }
 }
@@ -171,7 +170,7 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
 
   for (t = 0; t < TMAX; t++) {
 
-    // if (t == 30) sync_checkpoint(t, ex, ey, hz, _fict_);
+    if (t == 30) sync_checkpoint(t, ex, ey, hz, _fict_);
 
     // начат участок ey
     if (workRank == 0)
