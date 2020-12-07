@@ -12,6 +12,7 @@ float cp_ex[NX][NY];
 float cp_ey[NX][NY];
 float cp_hz[NX][NY];
 float cp__fict_[TMAX];
+int cp_t = 0;
 
 static double rtclock() {
   struct timeval Tp;
@@ -30,7 +31,7 @@ void bench_timer_print() {
   printf("Time in seconds = %0.6lf\n", bench_t_end - bench_t_start);
 }
 
-static void init_checkpoint() {
+void init_checkpoint() {
   int i, j;
   for (i = 0; i < TMAX; i++)
     cp__fict_[i] = (float)i;
@@ -42,8 +43,56 @@ static void init_checkpoint() {
     }
 }
 
+void sync_checkpoint(int t,
+                     float (**ex)[nrows][NY],
+                     float (**ey)[nrows + 2][NY],
+                     float (**hz)[nrows + 2][NY],
+                     float (**_fict_)[TMAX]
+){
+  /*
+    1. сначала собираем матрицу у одного процесса
+    2. потом рассылаем ее всем живым процессам
+  */
+  int masterProc;
+  for (int i = 0; i < numProcsAlive; i++) {
+    if (procsAlive[i]) {
+      masterProc = i;
+      break;
+    }
+  }
+
+  if (rank == masterProc) {
+    // копируем свои данные в матрицу
+    memcpy(cp_ex, **ex, nrows * NY * sizeof(float));
+    memcpy(cp_ey, **ey + NY, nrows * NY * sizeof(float));
+    memcpy(cp_hz, **hz + NY, nrows * NY * sizeof(float));
+    // _fict_ не изменяется и имеется в чекпоинте с самой ее инициализации
+
+    MPI_Request req[3 * (numProcsAlive - 1)];
+
+    int offset = 1;
+    int reqI = 0;
+    for (int i = masterProc + 1; i < numProcsAlive; i++) {
+      if (procsAlive[i]) {
+        MPI_Irecv(cp_ex + nrows * NY * offset, nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(cp_ey + nrows * NY * offset, nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(cp_hz + nrows * NY * offset, nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        offset++;
+      }
+      MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
+    }
+  } else {
+    // printf("rank: %d\n", rank);
+    MPI_Request req[3];
+    MPI_Isend(**ex, nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[0]);
+    MPI_Isend(**ey + NY, nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[1]);
+    MPI_Isend(**hz + NY, nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
+    MPI_Waitall(3, req, NULL);
+  }
+}
+
 /* Каждый процесс работает только со своей частью матрицы. */
-static void reinit(
+void reinit(
   // TODO: копировать данные из чекпоинта, заполнять nrows;
   float (**ex)[nrows][NY], // ex не нужны теневые грани
   float (**ey)[nrows + 2][NY], // ey и hz нужны теневые грани
@@ -113,7 +162,7 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
                            float (**ey)[nrows + 2][NY], 
                            float (**hz)[nrows + 2][NY],
                            float (**_fict_)[TMAX]
-) {
+){
   MPI_Request req[4];
   MPI_Status status[4];
   int t, i, j;
@@ -121,6 +170,9 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
   int II, shift;
 
   for (t = 0; t < TMAX; t++) {
+
+    // if (t == 30) sync_checkpoint(t, ex, ey, hz, _fict_);
+
     // начат участок ey
     if (workRank == 0)
       for (j = 0; j < NY; j++)
@@ -142,23 +194,25 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
     // завершен участок ex
 
     // начинаем синхронизировать ey
+
     if (workRank != 0) {
-      MPI_Irecv(*ey[0][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 1,
+      MPI_Irecv(&(**ey)[0][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
+
     if (workRank != 0) {
-      MPI_Isend(*ey[1][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 2,
+      MPI_Isend(&(**ey)[1][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
     if (workRank != numProcsAlive - 1) {
-      MPI_Isend(*ey[nrows][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 1,
+      MPI_Isend(&(**ey)[nrows][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
     if (workRank != numProcsAlive - 1) {
-      MPI_Irecv(*ey[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 2,
+      MPI_Irecv(&(**ey)[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
 
@@ -175,44 +229,45 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
       II = 2;
       shift = 0;
     }
+
     MPI_Waitall(II, &req[shift], &status[0]);
     // закончили синхронизацию ey
     // начат участок hz
     for (i = 1; i <= nrows - 1; i++) {
       for (j = 0; j < NY - 1; j++)
-        (**hz)[i][j] = (**hz)[i][j] - 0.7f * (ex[i - 1][j + 1] 
-                                    - ex[i - 1][j] 
-                                    + ey[i + 1][j] 
-                                    - ey[i][j]);
+        (**hz)[i][j] = (**hz)[i][j] - 0.7f * ((**ex)[i - 1][j + 1] 
+                                    - (**ex)[i - 1][j] 
+                                    + (**ey)[i + 1][j] 
+                                    - (**ey)[i][j]);
     }
 
     if (workRank != numProcsAlive - 1) {
       for (j = 0; j < NY - 1; j++)
-        (**hz)[nrows][j] = (**hz)[nrows][j] - 0.7f * (ex[nrows - 1][j + 1] 
-                                            - ex[nrows - 1][j] 
-                                            + ey[nrows + 1][j] 
-                                            - ey[i][j]);
+        (**hz)[nrows][j] = (**hz)[nrows][j] - 0.7f * ((**ex)[nrows - 1][j + 1] 
+                                            - (**ex)[nrows - 1][j] 
+                                            + (**ey)[nrows + 1][j] 
+                                            - (**ey)[i][j]);
     }
     // завершен участок hz
 
     // начинаем синхронизацию hz
     if (workRank != 0) {
-      MPI_Irecv(&hz[0][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 1,
+      MPI_Irecv(&(**hz)[0][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
     if (workRank != 0) {
-      MPI_Isend(&hz[1][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 2,
+      MPI_Isend(&(**hz)[1][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
     if (workRank != numProcsAlive - 1) {
-      MPI_Isend(&hz[nrows][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 1,
+      MPI_Isend(&(**hz)[nrows][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
     if (workRank != numProcsAlive - 1) {
-      MPI_Irecv(&hz[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 2,
+      MPI_Irecv(&(**hz)[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
 
