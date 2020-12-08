@@ -1,5 +1,4 @@
 #include "mpi_fdtd-2d.h"
-#include <stdio.h>
 #define CHECKPOINT_ITERATIONS 30
 
 double bench_t_start, bench_t_end;
@@ -85,9 +84,8 @@ void sync_checkpoint(int t,
     }
   }
 
-  // printf("%d _start_ 88\n", rank);
   if (rank == masterProc) {
-    // копируем свои данные в матрицу
+    // копируем свои данные из рабочих матриц в чекпоинт
     memcpy(cp_ex, &(**ex)[0][0], nrows * NY * sizeof(float));
     memcpy(cp_ey, &(**ey)[1][0], nrows * NY * sizeof(float));
     memcpy(cp_hz, &(**hz)[1][0], nrows * NY * sizeof(float));
@@ -98,10 +96,8 @@ void sync_checkpoint(int t,
     int offset = workNrows[rank];
     int reqI = 0;
 
-    printf("%d _start_ 108\n", rank);
     for (int i = masterProc + 1; i < numtasks; i++) {
       if (procsAlive[i]) {
-        printf("offset: %3d workNrows[%d]: %d\n", offset, i, workNrows[i]);
         MPI_Irecv(&cp_ex[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
         MPI_Irecv(&cp_ey[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 2, MPI_COMM_WORLD, &req[reqI++]);
         MPI_Irecv(&cp_hz[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 3, MPI_COMM_WORLD, &req[reqI++]);
@@ -110,7 +106,6 @@ void sync_checkpoint(int t,
     }
 
     MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
-    printf("%d _end_ 108\n", rank);
     // Отправляем собранную контрольную точку всем остальным процессам
     reqI = 0;
     for (int i = masterProc + 1; i < numtasks; i++) {
@@ -124,20 +119,17 @@ void sync_checkpoint(int t,
   } else {
     // отправляем свою часть контрольной точки
     MPI_Request req[3];
-    printf("%d _start_ 132\n", rank);
     MPI_Isend(&(**ex)[0][0], nrows * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
     MPI_Isend(&(**ey)[1][0], nrows * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
     MPI_Isend(&(**hz)[1][0], nrows * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
 
     MPI_Waitall(3, req, NULL);
-    printf("%d _end_ 132\n", rank);
     // получаем всю контрольную точку
     MPI_Irecv(&cp_ex[0][0], NX * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
     MPI_Irecv(&cp_ey[0][0], NX * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
     MPI_Irecv(&cp_hz[0][0], NX * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
     MPI_Waitall(3, req, NULL);
   }
-  // printf("%d _end_ 88\n", rank);
 }
 
 void checkpoint_restore(int *t,
@@ -319,8 +311,8 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
       shift = 0;
     }
     MPI_Waitall(II, &req[shift], &status[0]);
-
     // закончили синхронизацию ey
+
     // начат участок hz
     for (i = 1; i <= nrows - 1; i++) {
       for (j = 0; j < NY - 1; j++)

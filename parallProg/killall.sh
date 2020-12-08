@@ -1,1 +1,0 @@
-killall -u nikita
