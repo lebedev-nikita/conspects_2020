@@ -98,8 +98,8 @@ void sync_checkpoint(int t,
     int offset = workNrows[rank];
     int reqI = 0;
 
-    printf("%d _start_ 102\n", rank);
-    for (int i = masterProc + 1; i < numProcsAlive; i++) {
+    printf("%d _start_ 108\n", rank);
+    for (int i = masterProc + 1; i < numtasks; i++) {
       if (procsAlive[i]) {
         printf("offset: %3d workNrows[%d]: %d\n", offset, i, workNrows[i]);
         MPI_Irecv(&cp_ex[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
@@ -108,14 +108,12 @@ void sync_checkpoint(int t,
         offset += workNrows[i];
       }
     }
-    printf("%d _end_ 102\n", rank);
 
-    printf("%d _start_ 108\n", rank);
     MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
     printf("%d _end_ 108\n", rank);
     // Отправляем собранную контрольную точку всем остальным процессам
     reqI = 0;
-    for (int i = masterProc + 1; i < numProcsAlive; i++) {
+    for (int i = masterProc + 1; i < numtasks; i++) {
       if (procsAlive[i]) {
         MPI_Isend(&cp_ex[0][0], NX * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
         MPI_Isend(&cp_ey[0][0], NX * NY, MPI_FLOAT, i, 2, MPI_COMM_WORLD, &req[reqI++]);
@@ -126,13 +124,11 @@ void sync_checkpoint(int t,
   } else {
     // отправляем свою часть контрольной точки
     MPI_Request req[3];
-    printf("%d _start_ 124\n", rank);
+    printf("%d _start_ 132\n", rank);
     MPI_Isend(&(**ex)[0][0], nrows * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
     MPI_Isend(&(**ey)[1][0], nrows * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
     MPI_Isend(&(**hz)[1][0], nrows * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
-    printf("%d _end_ 124\n", rank);
 
-    printf("%d _start_ 132\n", rank);
     MPI_Waitall(3, req, NULL);
     printf("%d _end_ 132\n", rank);
     // получаем всю контрольную точку
@@ -250,8 +246,6 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
     if (rank == 0) printf("t: %d\n", t);
     // создаем чекпоинт на на каждой 30-й итерации
     if (t % CHECKPOINT_ITERATIONS == 0) sync_checkpoint(t, ex, ey, hz, _fict_);
-    if (rank == 0) printf("%d\n", t);
-
 
     // проверяем наличие ошибок и откатываемся, если нужно
     errStatus = 1; // 0 - ошибка, 1 - ошибки не было
