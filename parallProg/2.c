@@ -1,5 +1,6 @@
 #include "mpi_fdtd-2d.h"
 #include <stdlib.h>
+#define CHECKPOINT_ITERATIONS 30
 
 double bench_t_start, bench_t_end;
 int numtasks, rank;
@@ -194,10 +195,17 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
   int t, i, j;
   int nExchanges, n;
   int II, shift;
+  int wasCheckpoint = 0;
 
   for (t = 0; t < TMAX; t++) {
+    if (rank == 0) printf("%d\n", t);
 
-    if (t == 30) sync_checkpoint(t, ex, ey, hz, _fict_);
+    if (t % CHECKPOINT_ITERATIONS == 0) sync_checkpoint(t, ex, ey, hz, _fict_);
+    if (t == 37 && !wasCheckpoint) {
+      wasCheckpoint = 1;
+      t = cp_t;
+      reinit(ex, ey, hz, _fict_);
+    }
 
     // начат участок ey
     if (workRank == 0)
