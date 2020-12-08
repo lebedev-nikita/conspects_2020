@@ -44,6 +44,27 @@ void init_checkpoint() {
     }
 }
 
+int sync_errors(int noErrors) {
+  procsAlive[rank] = noErrors;
+  MPI_Request req[2 * (numProcsAlive - 1)];
+
+  int reqI = 0;
+  for (int i = 0; i < numtasks; i++) {
+    if (i != rank && procsAlive[i]) {
+      MPI_Irecv(&procsAlive[i], 1, MPI_INT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+      MPI_Isend(&procsAlive[rank], 1, MPI_INT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+    }
+  }
+  
+  MPI_Waitall(2 * (numProcsAlive - 1), req, NULL);
+  int aliveCount = 0;
+  for (int i = 0; i < numtasks; i++) {
+    if (procsAlive[i]) aliveCount++;
+  }
+
+  return aliveCount < numProcsAlive;
+}
+
 void sync_checkpoint(int t,
                      float (**ex)[nrows][NY],
                      float (**ey)[nrows + 2][NY],
@@ -163,7 +184,7 @@ void reinit(
   *hz = malloc((nrows + 2) * NY * sizeof(float));
   *_fict_  = malloc(TMAX * sizeof(float));
 
-  // с этого момента мы должны копиросать чекпоинт в локальные матрицы
+  // с этого момента мы должны копировать чекпоинт в локальные матрицы
   int i, j;
   for (i = 0; i < TMAX; i++)
     (**_fict_)[i] = cp__fict_[i];
@@ -196,15 +217,27 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
   int nExchanges, n;
   int II, shift;
   int wasCheckpoint = 0;
+  int noErrors, wasError;
 
   for (t = 0; t < TMAX; t++) {
     if (rank == 0) printf("%d\n", t);
-
     if (t % CHECKPOINT_ITERATIONS == 0) sync_checkpoint(t, ex, ey, hz, _fict_);
+
+    // проверяем наличие ошибок и откатываемся, если нужно
+    noErrors = 1;
     if (t == 37 && !wasCheckpoint) {
       wasCheckpoint = 1;
+      if (rank == 1) noErrors = 0;
+    }
+    wasError = sync_errors(noErrors);
+    if (wasError) printf("%d WAS ERROR\n", rank);
+    if (wasError) {
+      if (!procsAlive[rank]) {
+        return;
+      }
       t = cp_t;
       reinit(ex, ey, hz, _fict_);
+      printf("%d end reinit\n", rank);
     }
 
     // начат участок ey
@@ -265,6 +298,7 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
     }
 
     MPI_Waitall(II, &req[shift], &status[0]);
+
     // закончили синхронизацию ey
     // начат участок hz
     for (i = 1; i <= nrows - 1; i++) {
@@ -318,6 +352,7 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
       II = 2;
       shift = 0;
     }
+
     MPI_Waitall(II, &req[shift], &status[0]);
     // завершили синхронизацию hz
   }
@@ -340,14 +375,13 @@ int main(int argc, char **argv) {
 
   init_checkpoint();
   reinit(&ex, &ey, &hz, &_fict_);
-  if (rank == 0) printf("REINIT DONE\n");
 
   if (rank == leader_rank) bench_timer_start();
 
   kernel_fdtd_2d(&ex, &ey, &hz, &_fict_); // вычисления
+  printf("%d line 386\n", rank);
 
   MPI_Barrier(MPI_COMM_WORLD); // ждем, чтобы измерения времени были максимально точными
-
   if (rank == leader_rank) {
     bench_timer_stop();
     bench_timer_print();
