@@ -2,8 +2,8 @@
 // #define NX 12
 // #define NY 12
 
-#define SMALL_DATASET
-// #define MEDIUM_DATASET
+// #define SMALL_DATASET
+#define MEDIUM_DATASET
 // #define LARGE_DATASET
 // #define EXTRALARGE_DATASET
 
@@ -35,6 +35,7 @@
 # endif
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <math.h>

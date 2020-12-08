@@ -1,12 +1,12 @@
 #include "mpi_fdtd-2d.h"
-#include <stdlib.h>
+#include <stdio.h>
 #define CHECKPOINT_ITERATIONS 30
 
 double bench_t_start, bench_t_end;
 int numtasks, rank;
 int startrow, lastrow, nrows;
-int *procsAlive, numProcsAlive;
-int nextRank, prevRank, workRank;
+int *procsAlive, numProcsAlive, *workRank, *workNrows;
+int nextRank, prevRank;
 
 // в этих матрицах хранится чекпоинт
 float cp_ex[NX][NY];
@@ -44,8 +44,8 @@ void init_checkpoint() {
     }
 }
 
-int sync_errors(int noErrors) {
-  procsAlive[rank] = noErrors;
+int sync_error_status(int errStatus) {
+  procsAlive[rank] = errStatus;
   MPI_Request req[2 * (numProcsAlive - 1)];
 
   int reqI = 0;
@@ -55,7 +55,7 @@ int sync_errors(int noErrors) {
       MPI_Isend(&procsAlive[rank], 1, MPI_INT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
     }
   }
-  
+
   MPI_Waitall(2 * (numProcsAlive - 1), req, NULL);
   int aliveCount = 0;
   for (int i = 0; i < numtasks; i++) {
@@ -85,6 +85,7 @@ void sync_checkpoint(int t,
     }
   }
 
+  // printf("%d _start_ 88\n", rank);
   if (rank == masterProc) {
     // копируем свои данные в матрицу
     memcpy(cp_ex, &(**ex)[0][0], nrows * NY * sizeof(float));
@@ -94,18 +95,25 @@ void sync_checkpoint(int t,
 
     MPI_Request req[3 * (numProcsAlive - 1)];
     // Собираем контрольную точку в процессе-мастере
-    int offset = 1;
+    int offset = workNrows[rank];
     int reqI = 0;
+
+    printf("%d _start_ 102\n", rank);
     for (int i = masterProc + 1; i < numProcsAlive; i++) {
       if (procsAlive[i]) {
-        MPI_Irecv(&cp_ex[nrows * offset][0], nrows * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
-        MPI_Irecv(&cp_ey[nrows * offset][0], nrows * NY, MPI_FLOAT, i, 2, MPI_COMM_WORLD, &req[reqI++]);
-        MPI_Irecv(&cp_hz[nrows * offset][0], nrows * NY, MPI_FLOAT, i, 3, MPI_COMM_WORLD, &req[reqI++]);
-        offset++;
+        printf("offset: %3d workNrows[%d]: %d\n", offset, i, workNrows[i]);
+        MPI_Irecv(&cp_ex[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(&cp_ey[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 2, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Irecv(&cp_hz[offset][0], workNrows[i] * NY, MPI_FLOAT, i, 3, MPI_COMM_WORLD, &req[reqI++]);
+        offset += workNrows[i];
       }
     }
+    printf("%d _end_ 102\n", rank);
+
+    printf("%d _start_ 108\n", rank);
     MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
-    // Отправляем собранную контрольную точку всем процессам
+    printf("%d _end_ 108\n", rank);
+    // Отправляем собранную контрольную точку всем остальным процессам
     reqI = 0;
     for (int i = masterProc + 1; i < numProcsAlive; i++) {
       if (procsAlive[i]) {
@@ -118,16 +126,22 @@ void sync_checkpoint(int t,
   } else {
     // отправляем свою часть контрольной точки
     MPI_Request req[3];
+    printf("%d _start_ 124\n", rank);
     MPI_Isend(&(**ex)[0][0], nrows * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
     MPI_Isend(&(**ey)[1][0], nrows * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
     MPI_Isend(&(**hz)[1][0], nrows * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
+    printf("%d _end_ 124\n", rank);
+
+    printf("%d _start_ 132\n", rank);
     MPI_Waitall(3, req, NULL);
+    printf("%d _end_ 132\n", rank);
     // получаем всю контрольную точку
     MPI_Irecv(&cp_ex[0][0], NX * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
     MPI_Irecv(&cp_ey[0][0], NX * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
     MPI_Irecv(&cp_hz[0][0], NX * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
     MPI_Waitall(3, req, NULL);
   }
+  // printf("%d _end_ 88\n", rank);
 }
 
 void checkpoint_restore(int *t,
@@ -141,7 +155,6 @@ void checkpoint_restore(int *t,
 
 /* Каждый процесс работает только со своей частью матрицы. */
 void reinit(
-  // TODO: копировать данные из чекпоинта, заполнять nrows;
   float (**ex)[nrows][NY], // ex не нужны теневые грани
   float (**ey)[nrows + 2][NY], // ey и hz нужны теневые грани
   float (**hz)[nrows + 2][NY], //
@@ -152,17 +165,18 @@ void reinit(
   if (*hz != NULL) free(*hz);
   if (*_fict_ != NULL) free(*_fict_);
 
+
   // считаем живые процессы и устанавливаем prevRank, nextRank
   numProcsAlive = 0;
   int setPrevRank = 0;
   int setNextRank = 0;
-  workRank = 0;
 
+  int wr = 0;
   for (int i = 0; i < numtasks; i++) {
     if (procsAlive[i]) { 
+      workRank[i] = wr++; // workRank[rank] устанавливается этой же строкой
       numProcsAlive++;
       if (i < rank) {
-        workRank++;
         prevRank = i;
         setPrevRank = 1;
       }
@@ -175,16 +189,29 @@ void reinit(
   if (!setPrevRank) prevRank = -1;
   if (!setNextRank) nextRank = -1;
 
-  startrow = (workRank * NX) / numProcsAlive;
-  lastrow = ((workRank + 1) * NX / numProcsAlive) - 1;
-  nrows = lastrow - startrow + 1;
+  // TODO: подумать, как выделяется память для последнего процесса
+  int lr, sr;
+  int count = 0;
+  for (int i = 0; i < numtasks; i++) {
+    if (procsAlive[i]) {
+      sr = (NX  * (workRank[i]    )) / numProcsAlive;
+      lr = ((NX * (workRank[i] + 1)) / numProcsAlive) - 1;
+      if (++count == numProcsAlive) lr = NX - 1;
+      workNrows[i] = lr - sr + 1;
+      if (i == rank) {
+        startrow = sr;
+        lastrow = lr;
+        nrows = workNrows[i];
+      }
+    }
+  }
 
-  *ex = malloc((nrows) * NY * sizeof(float));
+  *ex = malloc((nrows    ) * NY * sizeof(float));
   *ey = malloc((nrows + 2) * NY * sizeof(float));
   *hz = malloc((nrows + 2) * NY * sizeof(float));
   *_fict_  = malloc(TMAX * sizeof(float));
 
-  // с этого момента мы должны копировать чекпоинт в локальные матрицы
+  // копируем чекпоинт в рабочие матрицы
   int i, j;
   for (i = 0; i < TMAX; i++)
     (**_fict_)[i] = cp__fict_[i];
@@ -217,31 +244,34 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
   int nExchanges, n;
   int II, shift;
   int wasCheckpoint = 0;
-  int noErrors, wasError;
+  int errStatus, errHappened;
 
   for (t = 0; t < TMAX; t++) {
-    if (rank == 0) printf("%d\n", t);
+    if (rank == 0) printf("t: %d\n", t);
+    // создаем чекпоинт на на каждой 30-й итерации
     if (t % CHECKPOINT_ITERATIONS == 0) sync_checkpoint(t, ex, ey, hz, _fict_);
+    if (rank == 0) printf("%d\n", t);
+
 
     // проверяем наличие ошибок и откатываемся, если нужно
-    noErrors = 1;
-    if (t == 37 && !wasCheckpoint) {
+    errStatus = 1; // 0 - ошибка, 1 - ошибки не было
+
+    if (t == 37 && !wasCheckpoint) { // так мы моделируем ошибку
       wasCheckpoint = 1;
-      if (rank == 1) noErrors = 0;
+      if (rank == 1) errStatus = 0;
     }
-    wasError = sync_errors(noErrors);
-    if (wasError) printf("%d WAS ERROR\n", rank);
-    if (wasError) {
+    // если errStatus=0, функция помечает procsAlive[rank] мертвым
+    errHappened = sync_error_status(errStatus);
+    if (errHappened) {
       if (!procsAlive[rank]) {
         return;
       }
       t = cp_t;
       reinit(ex, ey, hz, _fict_);
-      printf("%d end reinit\n", rank);
     }
 
     // начат участок ey
-    if (workRank == 0)
+    if (prevRank != -1)
       for (j = 0; j < NY; j++)
         (**ey)[1][j] = (**_fict_)[t];
     else
@@ -261,24 +291,22 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
     // завершен участок ex
 
     // начинаем синхронизировать ey
-
-    if (workRank != 0) {
+    if (prevRank != -1) {
       MPI_Irecv(&(**ey)[0][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
-
-    if (workRank != 0) {
+    if (prevRank != -1) {
       MPI_Isend(&(**ey)[1][0], NY, MPI_FLOAT, prevRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
-    if (workRank != numProcsAlive - 1) {
+    if (nextRank != -1) {
       MPI_Isend(&(**ey)[nrows][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
-    if (workRank != numProcsAlive - 1) {
+    if (nextRank != -1) {
       MPI_Irecv(&(**ey)[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'e' + 'y' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
@@ -289,14 +317,13 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
       II = 0;
       shift = 0;
     } // если существует всего 1 MPI процесс
-    else if (workRank == 0) {
+    else if (prevRank == -1) {
       II = 2;
       shift = 2;
-    } else if (workRank == numProcsAlive - 1) {
+    } else if (nextRank == -1) {
       II = 2;
       shift = 0;
     }
-
     MPI_Waitall(II, &req[shift], &status[0]);
 
     // закончили синхронизацию ey
@@ -309,7 +336,7 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
                                     - (**ey)[i][j]);
     }
 
-    if (workRank != numProcsAlive - 1) {
+    if (nextRank != -1) {
       for (j = 0; j < NY - 1; j++)
         (**hz)[nrows][j] = (**hz)[nrows][j] - 0.7f * ((**ex)[nrows - 1][j + 1] 
                                             - (**ex)[nrows - 1][j] 
@@ -319,22 +346,22 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
     // завершен участок hz
 
     // начинаем синхронизацию hz
-    if (workRank != 0) {
+    if (prevRank != -1) {
       MPI_Irecv(&(**hz)[0][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 1,
                 MPI_COMM_WORLD, &req[0]);
     }
 
-    if (workRank != 0) {
+    if (prevRank != -1) {
       MPI_Isend(&(**hz)[1][0], NY, MPI_FLOAT, prevRank, 'h' + 'z' + 2,
                 MPI_COMM_WORLD, &req[1]);
     }
 
-    if (workRank != numProcsAlive - 1) {
+    if (nextRank != -1) {
       MPI_Isend(&(**hz)[nrows][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 1,
                 MPI_COMM_WORLD, &req[2]);
     }
 
-    if (workRank != numProcsAlive - 1) {
+    if (nextRank != -1) {
       MPI_Irecv(&(**hz)[nrows + 1][0], NY, MPI_FLOAT, nextRank, 'h' + 'z' + 2,
                 MPI_COMM_WORLD, &req[3]);
     }
@@ -345,10 +372,10 @@ static void kernel_fdtd_2d(float (**ex)[nrows][NY],
       II = 0;
       shift = 0;
     } // если существует всего 1 MPI процесс
-    else if (workRank == 0) {
+    else if (prevRank == -1) {
       II = 2;
       shift = 2;
-    } else if (workRank == numProcsAlive - 1) {
+    } else if (nextRank == -1) {
       II = 2;
       shift = 0;
     }
@@ -366,6 +393,8 @@ int main(int argc, char **argv) {
   int leader_rank = 0;
 
   procsAlive = malloc(numtasks * sizeof(int));
+  workNrows = malloc(numtasks * sizeof(int));
+  workRank = malloc(numtasks * sizeof(int));
   for (int i = 0; i < numtasks; i++) procsAlive[i] = 1;
 
   float(*ex)[nrows][NY] = NULL;
@@ -379,7 +408,6 @@ int main(int argc, char **argv) {
   if (rank == leader_rank) bench_timer_start();
 
   kernel_fdtd_2d(&ex, &ey, &hz, &_fict_); // вычисления
-  printf("%d line 386\n", rank);
 
   MPI_Barrier(MPI_COMM_WORLD); // ждем, чтобы измерения времени были максимально точными
   if (rank == leader_rank) {
@@ -392,6 +420,8 @@ int main(int argc, char **argv) {
   free((void *)hz);
   free((void *)_fict_);
   free(procsAlive);
+  free(workNrows);
+  free(workRank);
 
   MPI_Finalize();
   return 0;
