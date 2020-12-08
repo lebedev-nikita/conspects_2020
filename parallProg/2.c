@@ -53,6 +53,8 @@ void sync_checkpoint(int t,
     1. сначала собираем матрицу у одного процесса
     2. потом рассылаем ее всем живым процессам
   */
+  cp_t = t;
+
   int masterProc;
   for (int i = 0; i < numProcsAlive; i++) {
     if (procsAlive[i]) {
@@ -69,7 +71,7 @@ void sync_checkpoint(int t,
     // _fict_ не изменяется и имеется в чекпоинте с самой ее инициализации
 
     MPI_Request req[3 * (numProcsAlive - 1)];
-
+    // Собираем контрольную точку в процессе-мастере
     int offset = 1;
     int reqI = 0;
     for (int i = masterProc + 1; i < numProcsAlive; i++) {
@@ -81,13 +83,38 @@ void sync_checkpoint(int t,
       }
     }
     MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
+    // Отправляем собранную контрольную точку всем процессам
+    reqI = 0;
+    for (int i = masterProc + 1; i < numProcsAlive; i++) {
+      if (procsAlive[i]) {
+        MPI_Isend(&cp_ex[0][0], NX * NY, MPI_FLOAT, i, 1, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Isend(&cp_ey[0][0], NX * NY, MPI_FLOAT, i, 2, MPI_COMM_WORLD, &req[reqI++]);
+        MPI_Isend(&cp_hz[0][0], NX * NY, MPI_FLOAT, i, 3, MPI_COMM_WORLD, &req[reqI++]);
+      }
+    }
+    MPI_Waitall(3 * (numProcsAlive - 1), req, NULL);
   } else {
+    // отправляем свою часть контрольной точки
     MPI_Request req[3];
-    MPI_Isend(&(**ex)[0][0], nrows * NY, MPI_INT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
-    MPI_Isend(&(**ey)[1][0], nrows * NY, MPI_INT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
-    MPI_Isend(&(**hz)[1][0], nrows * NY, MPI_INT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
+    MPI_Isend(&(**ex)[0][0], nrows * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
+    MPI_Isend(&(**ey)[1][0], nrows * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
+    MPI_Isend(&(**hz)[1][0], nrows * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
+    MPI_Waitall(3, req, NULL);
+    // получаем всю контрольную точку
+    MPI_Irecv(&cp_ex[0][0], NX * NY, MPI_FLOAT, masterProc, 1, MPI_COMM_WORLD, &req[0]);
+    MPI_Irecv(&cp_ey[0][0], NX * NY, MPI_FLOAT, masterProc, 2, MPI_COMM_WORLD, &req[1]);
+    MPI_Irecv(&cp_hz[0][0], NX * NY, MPI_FLOAT, masterProc, 3, MPI_COMM_WORLD, &req[2]);
     MPI_Waitall(3, req, NULL);
   }
+}
+
+void checkpoint_restore(int *t,
+                        float (**ex)[nrows][NY],
+                        float (**ey)[nrows + 2][NY],
+                        float (**hz)[nrows + 2][NY],
+                        float (**_fict_)[TMAX]
+){
+
 }
 
 /* Каждый процесс работает только со своей частью матрицы. */
