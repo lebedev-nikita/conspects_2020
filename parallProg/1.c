@@ -1,6 +1,6 @@
 #include <mpi.h>
 #include <stdio.h>
-
+ 
 #define MSG_LENGTH 10000
 #define CHUNK_LENGTH 1000
 #define NUM_CHUNKS (MSG_LENGTH / CHUNK_LENGTH)

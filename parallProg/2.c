@@ -1,6 +1,6 @@
 #include "mpi_fdtd-2d.h"
 #define CHECKPOINT_ITERATIONS 30
-
+ 
 double bench_t_start, bench_t_end;
 int numtasks, rank;
 int startrow, lastrow, nrows;
